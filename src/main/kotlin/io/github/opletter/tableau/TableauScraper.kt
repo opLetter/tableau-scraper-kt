@@ -7,7 +7,6 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
@@ -58,23 +57,21 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun getTableauData(): String {
-        val dataUrl =
-            "$hostAndRoot/bootstrapSession/sessions/$sessionId"
-        return session.post(dataUrl) {
-            setBody(
-                FormDataContent(Parameters.build {
-                    append("sheet_id", tableauData["sheetId"]!!.jsonPrimitive.content)
-                    append("clientDimension", Json.encodeToString(mapOf("w" to 1920, "h" to 1080)))
-                })
-            )
-        }.bodyAsText()
+        val dataUrl = "$hostAndRoot/bootstrapSession/sessions/$sessionId"
+        return session.submitFormWithBinaryData(
+            dataUrl,
+            formData {
+                append("sheet_id", tableauData["sheetId"]!!.jsonPrimitive.content)
+                append("clientDimension", Json.encodeToString(mapOf("w" to 1920, "h" to 1080)))
+            }
+        ).bodyAsText()
     }
 
     override suspend fun select(
         worksheetName: String,
         selection: List<Int>,
     ): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("worksheet", worksheetName)
             append("dashboard", dashboard)
             append(
@@ -85,13 +82,10 @@ class TableauScraper : Scraper {
                 })
             )
             append("selectOptions", "select-options-simple")
-        })
+        }
 
         val url = "$routePrefix/tabdoc/select"
-
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -119,27 +113,23 @@ class TableauScraper : Scraper {
             storyboard?.let { this["storyboard"] = it }
             storyboardId?.let { this["storyPointId"] = it }
         }
-
-        val payload = FormDataContent(Parameters.build {
-            if (membershipTarget) {
-                append("membershipTarget", "filter")
-            }
+        val payload = formData {
             append("visualIdPresModel", Json.encodeToString(visualIdPresModel))
             append("globalFieldName", globalFieldName)
             append("filterUpdateType", if (!filterDelta) "filter-replace" else "filter-delta")
+            if (membershipTarget) {
+                append("membershipTarget", "filter")
+            }
             if (filterDelta) {
                 append("filterAddIndices", Json.encodeToString(selection))
                 append("filterRemoveIndices", Json.encodeToString(selectionToRemove))
             } else {
                 append("filterIndices", Json.encodeToString(selection))
             }
-        })
+        }
 
         val url = "$routePrefix/tabdoc/categorical-filter-by-index"
-
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -154,19 +144,16 @@ class TableauScraper : Scraper {
         columnName: String,
         selection: List<Any?>,
     ): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("dashboard", dashboard)
             append("qualifiedFieldCaption", columnName)
             append("exclude", "false")
             append("filterUpdateType", "filter-replace")
             append("filterValues", Json.encodeToString(selection))
-        })
+        }
 
         val url = "$routePrefix/tabdoc/dashboard-categorical-filter"
-
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -178,18 +165,14 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun setParameterValue(parameterName: String, value: String): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("globalFieldName", parameterName)
             append("valueString", value)
             append("useUsLocale", "false")
-        })
-
-        val url =
-            "$routePrefix/tabdoc/set-parameter-value"
-
-        val response = session.post(url) {
-            setBody(payload)
         }
+
+        val url = "$routePrefix/tabdoc/set-parameter-value"
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -201,16 +184,12 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun goToSheet(windowId: String): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("windowId", windowId)
-        })
-
-        val url =
-            "$routePrefix/tabdoc/goto-sheet"
-
-        val response = session.post(url) {
-            setBody(payload)
         }
+
+        val url = "$routePrefix/tabdoc/goto-sheet"
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -222,16 +201,12 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun exportCrosstabServerDialog(): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("thumbnailUris", Json.encodeToString(emptyMap<String, String>()))
-        })
-
-        val url =
-            "$routePrefix/tabsrv/export-crosstab-server-dialog"
-
-        val response = session.post(url) {
-            setBody(payload)
         }
+
+        val url = "$routePrefix/tabsrv/export-crosstab-server-dialog"
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -243,17 +218,14 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun exportCrosstabToCsvServer(sheetId: String): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("sheetdocId", sheetId)
             append("useTabs", "true")
             append("sendNotifications", "true")
-        })
+        }
 
         val url = "$routePrefix/tabsrv/export-crosstab-to-csv-server"
-
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -275,18 +247,15 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun setActiveStoryPoint(storyBoard: String, storyPointId: String): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("storyboard", storyBoard)
             append("storyPointId", storyPointId)
             append("shouldAutoCapture", "false")
             append("shouldAutoRevert", "true")
-        })
+        }
 
         val url = "$routePrefix/tabdoc/set-active-story-point"
-
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -298,13 +267,11 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun getCsvData(viewId: String, prefix: String): String {
-        val dataUrl =
-            "$hostAndRoot/$prefix/sessions/$sessionId/views/$viewId"
+        val dataUrl = "$hostAndRoot/$prefix/sessions/$sessionId/views/$viewId"
         val response = session.get(dataUrl) {
             parameter("csv", "true")
             parameter("showall", "true")
         }
-
         return response.bodyAsText(Charsets.UTF_8)
     }
 
@@ -318,8 +285,7 @@ class TableauScraper : Scraper {
             put("dashboard", dashboardName)
         })
 
-        val dataUrl =
-            "$hostAndRoot/download/sessions/$sessionId/views/$viewId"
+        val dataUrl = "$hostAndRoot/download/sessions/$sessionId/views/$viewId"
         val response = session.get(dataUrl) {
             parameter("maxrows", "200")
             parameter("viz", input)
@@ -333,7 +299,7 @@ class TableauScraper : Scraper {
         dashboardName: String,
         numRows: Int,
     ): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("maxRows", numRows.toString())
             append("visualIdPresModel", Json.encodeToString(buildJsonObject {
                 put("worksheet", worksheetName)
@@ -341,12 +307,10 @@ class TableauScraper : Scraper {
                 put("flipboardZoneId", 0)
                 put("storyPointId", 0)
             }))
-        })
+        }
 
         val url = "$routePrefix/tabdoc/get-summary-data"
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -362,7 +326,7 @@ class TableauScraper : Scraper {
         dashboardName: String,
         numRows: Int,
     ): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("maxRows", numRows.toString())
             append("includeAllColumns", "true")
             append("visualIdPresModel", Json.encodeToString(buildJsonObject {
@@ -371,12 +335,10 @@ class TableauScraper : Scraper {
                 put("flipboardZoneId", 0)
                 put("storyPointId", 0)
             }))
-        })
+        }
 
         val url = "$routePrefix/tabdoc/get-underlying-data"
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -392,19 +354,16 @@ class TableauScraper : Scraper {
         drillDown: Boolean,
         position: Int,
     ): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("worksheet", worksheetName)
             append("dashboard", dashboard)
             append("boolAggregateDrillUp", drillDown.toString())
             append("shelfType", "columns-shelf")
             append("position", position.toString())
-        })
+        }
 
         val url = "$routePrefix/tabdoc/level-drill-up-down"
-
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
@@ -416,7 +375,7 @@ class TableauScraper : Scraper {
     }
 
     override suspend fun renderTooltipServer(worksheetName: String, x: Number, y: Number): JsonObject {
-        val payload = FormDataContent(Parameters.build {
+        val payload = formData {
             append("worksheet", worksheetName)
             append("dashboard", dashboard)
             append("vizRegionRect", Json.encodeToString(buildJsonObject {
@@ -431,12 +390,10 @@ class TableauScraper : Scraper {
             append("allowPromptText", "true")
             append("allowWork", "false")
             append("useInlineImages", "true")
-        })
+        }
 
         val url = "$routePrefix/tabsrv/render-tooltip-server"
-        val response = session.post(url) {
-            setBody(payload)
-        }
+        val response = session.submitFormWithBinaryData(url, payload)
 
         return try {
             val jsonResponse = response.bodyAsText()
