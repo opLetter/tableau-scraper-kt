@@ -410,28 +410,31 @@ internal fun onDataValue(valueIndex: Int, data: JsonArray, cstring: JsonArray): 
 internal fun getData(dataFull: JsonObject, indicesInfo: List<JsonObject>): Map<String, JsonArray> {
     val cstring = dataFull["cstring"]?.jsonArray ?: JsonArray(emptyList())
 
-    fun processIndices(
-        indices: JsonArray,
-        t: JsonArray,
-        suffix: String,
-        index: JsonObject,
-    ): List<Pair<String, JsonElement>> {
-        return indices.mapNotNull { idx ->
+    fun processIndices(index: JsonObject, suffix: String, useFn: Boolean): Pair<String, JsonArray>? {
+        val t = dataFull[index["dataType"]!!.jsonPrimitive.content]?.jsonArray ?: cstring
+        return index["${suffix}Indices"]!!.jsonArray.mapNotNull { idx ->
             val intValue = idx.jsonPrimitive.int
-            if (intValue < t.size) {
-                val fn = index["fn"]!!.jsonPrimitive.content.takeIf { it.isNotEmpty() }?.let { "-$it" }.orEmpty()
-                val key = "${index["fieldCaption"]!!.jsonPrimitive.content}$fn$suffix"
-                key to onDataValue(intValue, t, cstring)
-            } else null
+            if (intValue < t.size) onDataValue(intValue, t, cstring) else null
+        }.takeIf { it.isNotEmpty() }?.let { arr ->
+            val fn = index["fn"]!!.jsonPrimitive.content.takeIf { useFn && it.isNotEmpty() }?.let { "-$it" }.orEmpty()
+            val key = "${index["fieldCaption"]!!.jsonPrimitive.content}$fn-$suffix"
+            key to JsonArray(arr)
         }
     }
-
-    return indicesInfo.flatMap { index ->
-        val t = dataFull[index["dataType"]!!.jsonPrimitive.content]?.jsonArray ?: cstring
-        val valuePairs = processIndices(index["valueIndices"]!!.jsonArray, t, "-value", index)
-        val aliasPairs = processIndices(index["aliasIndices"]!!.jsonArray, t, "-alias", index)
-        valuePairs + aliasPairs
-    }.groupBy({ it.first }, { it.second }).mapValues { (_, values) -> JsonArray(values) }
+    // original code handles case with multiple indicesInfo with same fieldCaption by adding fn
+    // This should do the same thing, but by handling duplicates at same time
+    return indicesInfo
+        .groupBy { it["fieldCaption"]!!.jsonPrimitive.content }
+        .mapNotNull { (_, indices) ->
+            val a = indices.filter { it["valueIndices"]!!.jsonArray.isNotEmpty() }
+            val b = indices.filter { it["aliasIndices"]!!.jsonArray.isNotEmpty() }
+            listOfNotNull(
+                a.firstOrNull()?.let { processIndices(it, "value", false) },
+                b.firstOrNull()?.let { processIndices(it, "alias", false) },
+                (if (b.size > 1) b.last() else null)?.let { processIndices(it, "value", true) },
+                (if (b.size > 1) b.last() else null)?.let { processIndices(it, "alias", true) },
+            )
+        }.flatten().toMap()
 }
 
 internal fun getIndicesInfoVqlResponse(
