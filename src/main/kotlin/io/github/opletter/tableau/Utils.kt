@@ -57,7 +57,7 @@ private fun processFilters(filters: List<List<JsonObject>>, selectedFilters: Lis
             }
             val selection = table["tuples"]!!.jsonArray.mapNotNull { z ->
                 val x = z.jsonObject["t"]?.jsonArray?.getOrNull(0)
-                if (x != null && x.jsonObject["s"]?.jsonPrimitive?.boolean == true) {
+                if (x != null && x.jsonObject["s"]?.jsonPrimitive?.booleanOrNull == true) {
                     x.jsonObject["v"]!!.jsonPrimitive.content
                 } else null
             }
@@ -73,8 +73,8 @@ private fun processFilters(filters: List<List<JsonObject>>, selectedFilters: Lis
                     put("globalFieldName", globalFieldName)
                     putJsonArray("selection") {
                         val selections = if (
-                            t["all"]?.jsonPrimitive?.boolean == true ||
-                            t["allChecked"]?.jsonPrimitive?.boolean == true
+                            t["all"]?.jsonPrimitive?.booleanOrNull == true ||
+                            t["allChecked"]?.jsonPrimitive?.booleanOrNull == true
                         ) values + "all" else selection
                         selections.forEach { add(it) }
                     }
