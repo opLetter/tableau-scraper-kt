@@ -431,7 +431,7 @@ internal fun getData(dataFull: JsonObject, indicesInfo: List<JsonObject>): Map<S
             listOfNotNull(
                 a.firstOrNull()?.let { processIndices(it, "value", false) },
                 b.firstOrNull()?.let { processIndices(it, "alias", false) },
-                (if (b.size > 1) b.last() else null)?.let { processIndices(it, "value", true) },
+                (if (a.size > 1) a.last() else null)?.let { processIndices(it, "value", true) },
                 (if (b.size > 1) b.last() else null)?.let { processIndices(it, "alias", true) },
             )
         }.flatten().toMap()
