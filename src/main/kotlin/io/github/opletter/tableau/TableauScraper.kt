@@ -10,7 +10,9 @@ import io.ktor.client.statement.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
-class TableauScraper : Scraper {
+class TableauScraper(
+    clientConfig: HttpClientConfig<CIOEngineConfig>.() -> Unit = {},
+) : Scraper {
     override var host: String = ""
     override var info = JsonObject(emptyMap())
     override var data = JsonObject(emptyMap())
@@ -21,6 +23,7 @@ class TableauScraper : Scraper {
     override var filters = mutableMapOf<String, MutableList<JsonObject>>() // persist filters per worksheet
     override var zones = JsonObject(emptyMap()) // persist zones
     override val session: HttpClient = HttpClient(CIO) {
+        clientConfig()
         install(Logging) {
             logger = Logger.SIMPLE
             level = LogLevel.INFO
