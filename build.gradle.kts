@@ -15,10 +15,9 @@ dependencies {
     implementation(libs.coroutines)
     implementation(libs.serialization)
     implementation(libs.bundles.ktor)
-    implementation("io.ktor:ktor-client-logging-jvm:2.2.4")
     implementation(libs.jsoup)
-    implementation(libs.json.org)
     api(libs.jb.dataframe)
+
     testImplementation(libs.coroutines.test)
     testImplementation(libs.ktor.test)
     testImplementation(kotlin("test"))
@@ -33,7 +32,7 @@ kotlin {
     jvmToolchain(11)
 }
 
-val sourcesJar by tasks.creating(Jar::class) {
+val sourcesJar by tasks.registering(Jar::class) {
     archiveClassifier.set("sources")
     from(sourceSets.main.get().allSource)
 }

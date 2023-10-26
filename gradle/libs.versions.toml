@@ -1,15 +1,13 @@
 [versions]
-kotlin = "1.8.20"
-ktor = "2.2.4"
-coroutines = "1.6.4"
-serialization = "1.5.0"
-jsoup = "1.15.4"
-json = "20230227"
-dataframe = "0.9.1"
+kotlin = "1.9.20-RC2"
+ktor = "2.3.5"
+coroutines = "1.7.3"
+serialization = "1.6.0"
+jsoup = "1.16.2"
+dataframe = "0.12.0"
 
 [libraries]
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
-json-org = { module = "org.json:json", version.ref = "json" }
 jb-dataframe = { module = "org.jetbrains.kotlinx:dataframe", version.ref = "dataframe" }
 coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
@@ -21,7 +19,7 @@ coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", ve
 ktor-test = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
 [bundles]
-ktor = ["ktor-client-core", "ktor-client-cio", "ktor-client-logging", ]
+ktor = ["ktor-client-core", "ktor-client-cio", "ktor-client-logging"]
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
