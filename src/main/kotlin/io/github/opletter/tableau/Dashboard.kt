@@ -62,18 +62,12 @@ internal object Dashboard {
             data["vqlCmdResponse"]!!.jsonObject["layoutStatus"]!!.jsonObject["applicationPresModel"]!!.jsonObject
         val zonesWithWorksheet = scraper.zones.values.filter { zone ->
             zone as JsonObject
-            "worksheet" in zone && "presModelHolder" in zone && "visual" in zone["presModelHolder"]!!.jsonObject
-                    && "vizData" in zone["presModelHolder"]!!.jsonObject["visual"]!!.jsonObject
-        }
-
-        val zones = zonesWithWorksheet.run {
-            if (altStoryPoints)
-                ifEmpty { listStoryPointsCmdResponse(presModel, scraper) }
-            else this
-        }
+            "worksheet" in zone &&
+                    "vizData" in zone["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject.orEmpty()
+        }.ifEmpty { if (altStoryPoints) listStoryPointsCmdResponse(presModel, scraper) else emptyList() }
 
         val dataFull = getDataFullCmdResponse(presModel, scraper.dataSegments)
-        val output = zones.mapNotNull { selectedZone ->
+        val output = zonesWithWorksheet.mapNotNull { selectedZone ->
             val frameData = getWorksheetCmdResponse(selectedZone.jsonObject, dataFull) ?: return@mapNotNull null
             TableauWorksheet(
                 scraper = scraper,
@@ -81,7 +75,7 @@ internal object Dashboard {
                 originalInfo = JsonObject(emptyMap()),
                 name = selectedZone.jsonObject["worksheet"]!!.jsonPrimitive.content,
                 dataFrame = frameData.toDataFrameFill(),
-                dataFull = getDataFullCmdResponse(presModel, scraper.dataSegments),
+                dataFull = dataFull,
                 cmdResponse = true
             )
         }

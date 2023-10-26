@@ -425,7 +425,7 @@ internal fun getData(dataFull: JsonObject, indicesInfo: List<JsonObject>): Map<S
     // This should do the same thing, but by handling duplicates at same time
     return indicesInfo
         .groupBy { it["fieldCaption"]!!.jsonPrimitive.content }
-        .mapNotNull { (_, indices) ->
+        .flatMap { (_, indices) ->
             val a = indices.filter { it["valueIndices"]!!.jsonArray.isNotEmpty() }
             val b = indices.filter { it["aliasIndices"]!!.jsonArray.isNotEmpty() }
             listOfNotNull(
@@ -434,7 +434,7 @@ internal fun getData(dataFull: JsonObject, indicesInfo: List<JsonObject>): Map<S
                 (if (a.size > 1) a.last() else null)?.let { processIndices(it, "value", true) },
                 (if (b.size > 1) b.last() else null)?.let { processIndices(it, "alias", true) },
             )
-        }.flatten().toMap()
+        }.toMap()
 }
 
 internal fun getIndicesInfoVqlResponse(
@@ -453,9 +453,9 @@ internal fun getDataFullCmdResponse(
     originSegments: JsonObject,
     dataSegments: Map<String, JsonObject> = emptyMap(),
 ): JsonObject {
-    val altDataSegments = dataSegments.takeIf {
-        it.isNotEmpty() || "dataDictionary" !in presModel || "dataSegments" !in presModel["dataDictionary"]!!.jsonObject
-    } ?: presModel["dataDictionary"]!!.jsonObject["dataSegments"]!!.jsonObject.filterNotNullValues()
+    val altDataSegments = dataSegments.ifEmpty {
+        presModel["dataDictionary"]?.jsonObject?.get("dataSegments")?.jsonObject?.filterNotNullValues().orEmpty()
+    }
     return getDataFullHelper(JsonObject(altDataSegments), originSegments)
 }
 
