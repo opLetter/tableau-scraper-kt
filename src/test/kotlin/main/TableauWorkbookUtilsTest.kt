@@ -1,16 +1,15 @@
 package main
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TableauWorkbookUtilsTest {
     @Test
     fun `storybook filters`() = runTest {
@@ -161,7 +160,8 @@ class TableauWorkbookUtilsTest {
         assertEquals(2, data2.columnsCount())
     }
 
-    class TableauWorkbookTest {
+    @Nested
+    inner class TableauWorkbookTest {
         private val ts = object : FakeScraper() {
             var selectNoData = false
             var storyPointsData = false

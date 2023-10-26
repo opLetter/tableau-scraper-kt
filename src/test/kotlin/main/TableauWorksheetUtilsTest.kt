@@ -2,7 +2,6 @@ package main
 
 import io.github.opletter.tableau.Dashboard
 import io.github.opletter.tableau.TableauWorkbook
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Test
@@ -10,7 +9,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TableauWorksheetUtilsTest {
     @Test
     fun getParameters() = runTest {

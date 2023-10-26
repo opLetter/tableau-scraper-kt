@@ -1,14 +1,12 @@
 package main
 
 import io.github.opletter.tableau.Dashboard
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TableauWorksheetTest {
     private val ts = object : FakeScraper() {
         var selectEmpty = false

@@ -2,7 +2,6 @@ package main
 
 import io.github.opletter.tableau.Scraper
 import io.ktor.client.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject

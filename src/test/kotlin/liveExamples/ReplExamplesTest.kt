@@ -1,7 +1,6 @@
 package liveExamples
 
 import io.github.opletter.tableau.TableauScraper
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
@@ -11,7 +10,6 @@ import org.jetbrains.kotlinx.dataframe.io.toJson
 import org.jsoup.Jsoup
 import org.junit.jupiter.api.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ReplExamplesTest {
     @Test
     fun example2() = runTest {
@@ -155,7 +153,7 @@ class ReplExamplesTest {
             ?.get("values")?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty()
         println(dates)
 
-        for (date in dates.slice(dates.indexOf("1/5/2021 12:00:00 AM") + 1 until dates.indexOf("1/1/2021 12:00:00 AM"))) {
+        for (date in dates.slice(dates.indexOf("1/5/2021 12:00:00 AM") + 1..<dates.indexOf("1/1/2021 12:00:00 AM"))) {
             println(date)
             val wb = ws.select("ATTR(DATE_FOR_REPORT)", date)
             println(wb.getWorksheet("BY COUNTY").data.toJson())

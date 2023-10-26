@@ -1,12 +1,10 @@
 package liveExamples
 
 import io.github.opletter.tableau.TableauScraper
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 // Here we test known working examples, just to ensure that they don't crash
-@OptIn(ExperimentalCoroutinesApi::class)
 class ExampleTest {
     @Test
     fun getWorksheetsData() = runTest {
