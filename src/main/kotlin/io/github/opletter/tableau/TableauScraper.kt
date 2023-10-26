@@ -406,4 +406,31 @@ class TableauScraper(
             throw Exception(response.bodyAsText())
         }
     }
+
+    override suspend fun clearFilter(
+        worksheetName: String,
+        globalFieldName: String,
+        dashboard: String,
+    ): JsonObject {
+        val visualIdPresModel = buildMap {
+            this["worksheet"] = worksheetName
+            this["dashboard"] = dashboard
+        }
+        val payload = formData {
+            append("visualIdPresModel", Json.encodeToString(visualIdPresModel))
+            append("globalFieldName", globalFieldName)
+            append("filterUpdateType", "filter-all")
+        }
+
+        val url = "$routePrefix/tabdoc/categorical-filter"
+        val response = session.submitFormWithBinaryData(url, payload)
+
+        return try {
+            val jsonResponse = response.bodyAsText()
+            Json.parseToJsonElement(jsonResponse).jsonObject
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw Exception(response.bodyAsText())
+        }
+    }
 }

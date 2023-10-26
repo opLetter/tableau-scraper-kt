@@ -173,4 +173,10 @@ interface Scraper {
     ): JsonObject
 
     suspend fun renderTooltipServer(worksheetName: String, x: Number, y: Number): JsonObject
+
+    suspend fun clearFilter(
+        worksheetName: String,
+        globalFieldName: String,
+        dashboard: String,
+    ): JsonObject
 }

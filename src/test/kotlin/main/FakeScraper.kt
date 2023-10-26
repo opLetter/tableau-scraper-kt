@@ -95,4 +95,8 @@ open class FakeScraper : Scraper {
 
     override suspend fun renderTooltipServer(worksheetName: String, x: Number, y: Number): JsonObject =
         tooltipCmdResponse
+
+    override suspend fun clearFilter(worksheetName: String, globalFieldName: String, dashboard: String): JsonObject {
+        TODO("Not yet implemented")
+    }
 }
