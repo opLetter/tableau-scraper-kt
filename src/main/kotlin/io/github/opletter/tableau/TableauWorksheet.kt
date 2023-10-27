@@ -267,7 +267,27 @@ class TableauWorksheet(
             updateFullData(r)
             return Dashboard.getWorksheetsCmdResponse(scraper, r)
         } catch (e: Exception) {
-            println(e.message)
+            e.printStackTrace()
+            TableauWorkbook(scraper, JsonObject(emptyMap()), JsonObject(emptyMap()), emptyList())
+        }
+    }
+
+    @Suppress("unused") // public API
+    suspend fun clearFilter(columnName: String): TableauWorkbook {
+        return try {
+            val filter = getFilters().firstOrNull { it["column"]!!.jsonPrimitive.content == columnName }
+                ?: return TableauWorkbook(scraper, JsonObject(emptyMap()), JsonObject(emptyMap()), emptyList())
+                    .also { println("column $columnName not found") }
+
+            val r = scraper.clearFilter(
+                worksheetName = name,
+                globalFieldName = filter["globalFieldName"]!!.jsonPrimitive.content,
+                dashboard = filter["dashboard"]?.jsonPrimitive?.content ?: scraper.dashboard
+            )
+            updateFullData(r)
+            return Dashboard.getWorksheetsCmdResponse(scraper, r)
+        } catch (e: Exception) {
+            e.printStackTrace()
             TableauWorkbook(scraper, JsonObject(emptyMap()), JsonObject(emptyMap()), emptyList())
         }
     }
