@@ -18,8 +18,7 @@ internal object Dashboard {
     fun getWorksheet(scraper: Scraper, data: JsonObject, info: JsonObject, worksheet: String): TableauWorksheet {
         var presModelMap = getPresModelVizData(data)
         val indicesInfo = if (presModelMap == null) {
-            presModelMap = getPresModelVizInfo(info)!!
-                .takeIf { "dataDictionary" in it }
+            presModelMap = getPresModelVizInfo(info)!!.takeIf { "dataDictionary" in it }
                 ?: getPresModelVizDataWithoutViz(data)!!
             getIndicesInfoStoryPoint(presModelMap, worksheet)
         } else {
@@ -103,8 +102,7 @@ internal object Dashboard {
             scraper.dataSegments,
             table["dataDictionary"]!!.jsonObject["dataSegments"]!!.jsonObject.mapValues { it.value.jsonObject }
         )
-        val frameData =
-            getWorksheetDownloadCmdResponse(dataFull = dataFull, table["underlyingDataTableColumns"]!!.jsonArray)
+        val frameData = getWorksheetDownloadCmdResponse(dataFull, table["underlyingDataTableColumns"]!!.jsonArray)
 
         return frameData.toDataFrame()
     }

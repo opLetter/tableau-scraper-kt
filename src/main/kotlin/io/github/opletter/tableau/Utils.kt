@@ -39,46 +39,43 @@ internal fun getSelectedFilters(presModel: JsonObject, worksheetName: String): L
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-private fun processFilters(filters: List<List<JsonObject>>, selectedFilters: List<JsonObject>): List<JsonObject> {
-    return filters.flatMap { arr ->
-        arr.filter { t ->
-            t["table"]?.jsonObject?.let { "schema" in it && "tuples" in it } == true
-        }.flatMap { t ->
-            val table = t["table"]!!.jsonObject
-            val columns = table["schema"]!!.jsonArray.map { z ->
-                Triple(
-                    z.jsonObject["caption"]!!.jsonPrimitive.content,
-                    z.jsonObject["name"]!!.jsonArray,
-                    z.jsonObject["ordinal"]!!.jsonPrimitive.content
-                )
-            }
-            val values = table["tuples"]!!.jsonArray.mapNotNull { z ->
-                val x = z.jsonObject["t"]?.jsonArray?.getOrNull(0) ?: return@mapNotNull null
+private fun processFilters(filters: List<JsonObject>, selectedFilters: List<JsonObject>): List<JsonObject> {
+    return filters.flatMap { t ->
+        val table = t["table"]?.jsonObject ?: return@flatMap emptyList()
+        val columns = table["schema"]?.jsonArray?.map { z ->
+            Triple(
+                z.jsonObject["caption"]!!.jsonPrimitive.content,
+                z.jsonObject["name"]!!.jsonArray,
+                z.jsonObject["ordinal"]!!.jsonPrimitive.content
+            )
+        } ?: return@flatMap emptyList()
+        val tuples = table["tuples"]?.jsonArray ?: return@flatMap emptyList()
+        val values = tuples.mapNotNull { z ->
+            val x = z.jsonObject["t"]?.jsonArray?.getOrNull(0) ?: return@mapNotNull null
+            x.jsonObject["v"]!!.jsonPrimitive.content
+        }
+        val selection = tuples.mapNotNull { z ->
+            val x = z.jsonObject["t"]?.jsonArray?.getOrNull(0)
+            if (x != null && x.jsonObject["s"]?.jsonPrimitive?.booleanOrNull == true) {
                 x.jsonObject["v"]!!.jsonPrimitive.content
-            }
-            val selection = table["tuples"]!!.jsonArray.mapNotNull { z ->
-                val x = z.jsonObject["t"]?.jsonArray?.getOrNull(0)
-                if (x != null && x.jsonObject["s"]?.jsonPrimitive?.booleanOrNull == true) {
-                    x.jsonObject["v"]!!.jsonPrimitive.content
-                } else null
-            }
-            columns.map { c ->
-                val globalFieldName = "[${c.second[0].jsonPrimitive.content}].[${c.second[1].jsonPrimitive.content}]"
-                val selectionAlt = selectedFilters.filter { it["fn"]!!.jsonPrimitive.content == globalFieldName }
-                buildJsonObject {
-                    put("column", c.first)
-                    put("ordinal", c.third)
-                    putJsonArray("values") { addAll(values) }
-                    put("globalFieldName", globalFieldName)
-                    putJsonArray("selection") {
-                        val selections = if (
-                            t["all"]?.jsonPrimitive?.booleanOrNull == true ||
-                            t["allChecked"]?.jsonPrimitive?.booleanOrNull == true
-                        ) values + "all" else selection
-                        addAll(selections)
-                    }
-                    putJsonArray("selectionAlt") { addAll(selectionAlt) }
+            } else null
+        }
+        columns.map { c ->
+            val globalFieldName = "[${c.second[0].jsonPrimitive.content}].[${c.second[1].jsonPrimitive.content}]"
+            val selectionAlt = selectedFilters.filter { it["fn"]!!.jsonPrimitive.content == globalFieldName }
+            buildJsonObject {
+                put("column", c.first)
+                put("ordinal", c.third)
+                putJsonArray("values") { addAll(values) }
+                put("globalFieldName", globalFieldName)
+                putJsonArray("selection") {
+                    val selections = if (
+                        t["all"]?.jsonPrimitive?.booleanOrNull == true ||
+                        t["allChecked"]?.jsonPrimitive?.booleanOrNull == true
+                    ) values + "all" else selection
+                    addAll(selections)
                 }
+                putJsonArray("selectionAlt") { addAll(selectionAlt) }
             }
         }
     }
@@ -103,7 +100,7 @@ internal fun listFilters(
     rootDashboard: String,
 ): List<JsonObject> {
     val zones = getZones(presModel)!!
-    val filters = getFilterValues(zones, worksheetName)
+    val filters = getFilterValues(zones, worksheetName).flatten()
     if (filters.isNotEmpty()) return processFilters(filters, selectedFilters)
 
     val storypoint = zones.values.firstNotNullOfOrNull { z ->
@@ -114,16 +111,17 @@ internal fun listFilters(
         val storyboardId = i.jsonObject["storyPointId"]!!.jsonPrimitive.content
         val dashboardPresModel = i.jsonObject["dashboardPresModel"]!!.jsonObject
 
-        val (storyboard, dashboard) = if ("sheetPath" in dashboardPresModel) {
-            val sheetPath = dashboardPresModel["sheetPath"]!!.jsonObject
+        val sheetPath = dashboardPresModel["sheetPath"]?.jsonObject
+        val visualIds = dashboardPresModel["visualIds"]
+
+        val (storyboard, dashboard) = if (sheetPath != null) {
             val storyboard = sheetPath["storyboard"]!!.jsonPrimitive.content
             val dashboard = if (sheetPath["isDashboard"]!!.jsonPrimitive.boolean) {
                 sheetPath["sheetName"]!!.jsonPrimitive.content
             } else rootDashboard
 
             storyboard to dashboard
-        } else if ("visualIds" in dashboardPresModel) {
-            val visualIds = dashboardPresModel["visualIds"]!!
+        } else if (visualIds != null) {
             val k = if (visualIds is JsonArray) visualIds[0] else visualIds
             val storyboard = k.jsonObject["storyboard"]!!.jsonPrimitive.content
             val dashboard = k.jsonObject["dashboard"]!!.jsonPrimitive.content
@@ -135,7 +133,7 @@ internal fun listFilters(
         }
 
         val zones2 = dashboardPresModel["zones"]!!.jsonObject
-        val filters2 = getFilterValues(zones2, worksheetName)
+        val filters2 = getFilterValues(zones2, worksheetName).flatten()
 
         processFilters(filters2, selectedFilters).map {
             buildJsonObject {
@@ -167,13 +165,16 @@ internal fun getFiltersForAllWorksheet(
     } else {
         val presModelMapVizData = getPresModelVizData(data)
         val presModelMapVizInfo = getPresModelVizInfo(info) ?: return emptyMap()
-        val worksheets = presModelMapVizData?.let(::listWorksheet)
+        val worksheets = presModelMapVizData?.let { listWorksheet(it) }
             ?: listWorksheetInfo(presModelMapVizInfo).ifEmpty { listStoryPointsInfo(presModelMapVizInfo) }
 
-        presModelMapVizInfo.let { presModel ->
-            worksheets.associateWith { worksheet ->
-                listFilters(presModel, worksheet, getSelectedFilters(presModel, worksheet), rootDashboard)
-            }
+        worksheets.associateWith { worksheet ->
+            listFilters(
+                presModelMapVizInfo,
+                worksheet,
+                getSelectedFilters(presModelMapVizInfo, worksheet),
+                rootDashboard
+            )
         }
     }
 }
@@ -209,7 +210,7 @@ internal fun selectWorksheet(
 }
 
 internal fun getPresModelVizData(data: JsonObject): JsonObject? {
-    return data["secondaryInfo"]?.jsonObject?.get("presModelMap")?.jsonObject?.takeIf { "vizData" in it }
+    return getPresModelVizDataWithoutViz(data)?.takeIf { "vizData" in it }
 }
 
 internal fun getPresModelVizDataWithoutViz(data: JsonObject): JsonObject? {
@@ -241,8 +242,7 @@ internal fun listWorksheet(presModelMap: JsonObject): List<String> {
 }
 
 internal fun listWorksheetInfo(presModel: JsonObject): List<String> {
-    val zones = getZones(presModel)!!
-    return zones.values.mapNotNull { z ->
+    return getZones(presModel)!!.values.mapNotNull { z ->
         z.jsonObject.takeIf { "visual" in it["presModelHolder"]?.jsonObject.orEmpty() }
             ?.get("worksheet")?.jsonPrimitive?.content
     }
@@ -273,10 +273,10 @@ internal fun getIndicesInfo(
 
     return columnsData["vizDataColumns"]!!.jsonArray.flatMap {
         it as JsonObject
-        val hasFieldCaption = "fieldCaption" in it
+        val fieldCaption = it["fieldCaption"]
         val isAutoSelect = it["isAutoSelect"]?.jsonPrimitive?.boolean == true
 
-        if ((hasFieldCaption || noFieldCaption) && (noSelectFilter || isAutoSelect)) {
+        if ((fieldCaption != null || noFieldCaption) && (noSelectFilter || isAutoSelect)) {
             it["paneIndices"]!!.jsonArray.mapIndexed { index, jsonElement ->
                 val paneIndex = jsonElement.jsonPrimitive.int
                 val columnIndex = it["columnIndices"]!!.jsonArray[index].jsonPrimitive.int
@@ -284,7 +284,7 @@ internal fun getIndicesInfo(
                     .jsonObject["vizPaneColumns"]!!.jsonArray[columnIndex].jsonObject
 
                 buildJsonObject {
-                    put("fieldCaption", it["fieldCaption"]?.jsonPrimitive?.content.orEmpty())
+                    put("fieldCaption", fieldCaption?.jsonPrimitive?.content.orEmpty())
                     put("tupleIds", paneColumnsList["tupleIds"]!!)
                     put("valueIndices", paneColumnsList["valueIndices"]!!)
                     put("aliasIndices", paneColumnsList["aliasIndices"]!!)
@@ -318,12 +318,11 @@ private fun getIndicesInfoSpecial(
         if ((fieldCaption != null || noFieldCaption) && (noSelectFilter || isAutoSelect)) {
             val paneIndex = it["paneIndices"]!!.jsonArray[0].jsonPrimitive.int
             val columnIndex = it["columnIndices"]!!.jsonArray[0].jsonPrimitive.int
-            val tupleIds = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
-                .jsonArray[columnIndex].jsonObject["tupleIds"]!!
-            val valueIndices = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
-                .jsonArray[columnIndex].jsonObject["valueIndices"]!!
-            val aliasIndices = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
-                .jsonArray[columnIndex].jsonObject["aliasIndices"]!!
+            val vizPaneColumn = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
+                .jsonArray[columnIndex].jsonObject
+            val tupleIds = vizPaneColumn["tupleIds"]!!
+            val valueIndices = vizPaneColumn["valueIndices"]!!
+            val aliasIndices = vizPaneColumn["aliasIndices"]!!
 
             buildJsonObject {
                 put("fieldCaption", fieldCaption?.jsonPrimitive?.content.orEmpty())
@@ -352,9 +351,7 @@ internal fun listWorksheetStoryPoint(
     hasWorksheet: Boolean = true,
     scraper: Scraper? = null,
 ): List<JsonObject> {
-    val zones = getZones(presModel) ?: return emptyList()
-
-    val actualZones = scraper?.zones ?: zones
+    val actualZones = scraper?.zones ?: getZones(presModel) ?: return emptyList()
     val storyPoint = actualZones.values.firstNotNullOfOrNull {
         it.jsonObject["presModelHolder"]?.jsonObject?.get("flipboard")?.jsonObject?.get("storyPoints")?.jsonObject
     }?.values?.firstOrNull() ?: return emptyList()
@@ -362,12 +359,13 @@ internal fun listWorksheetStoryPoint(
     val innerZones = storyPoint.jsonObject["dashboardPresModel"]!!.jsonObject["zones"]!!.jsonObject
 
     return innerZones.values.mapNotNull { innerZone ->
+        innerZone as JsonObject
         if (hasWorksheet) {
-            val presModelHolder = innerZone.jsonObject["presModelHolder"]?.jsonObject
-            val visual = presModelHolder?.get("visual")?.jsonObject
-            val vizData = visual?.get("vizData")
-            if (vizData != null) innerZone.jsonObject else null
-        } else innerZone.jsonObject.takeIf { "presModelHolder" in it }
+            innerZone.takeIf {
+                "worksheet" in it &&
+                        "vizData" in it.jsonObject["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject.orEmpty()
+            }
+        } else innerZone.takeIf { "presModelHolder" in it }
     }
 }
 
@@ -453,22 +451,17 @@ internal fun getDataFullCmdResponse(
 
 internal fun getWorksheetCmdResponse(selectedZone: JsonObject, dataFull: JsonObject): Map<String, JsonArray>? {
     val details = selectedZone["presModelHolder"]!!.jsonObject["visual"]!!.jsonObject["vizData"]!!.jsonObject
+    val columnsData = details["paneColumnsData"]?.jsonObject ?: return null
 
-    if ("paneColumnsData" !in details) {
-        return null
-    }
-
-    val columnsData = details["paneColumnsData"]!!.jsonObject
     val result = columnsData["vizDataColumns"]!!.jsonArray.mapNotNull {
         it as JsonObject
         val fieldCaption = it["fieldCaption"]?.jsonPrimitive?.content.orEmpty()
-
         val paneIndex = it["paneIndices"]!!.jsonArray[0].jsonPrimitive.int
         val columnIndex = it["columnIndices"]!!.jsonArray[0].jsonPrimitive.int
-        val valueIndices = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
-            .jsonArray[columnIndex].jsonObject["valueIndices"]!!
-        val aliasIndices = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
-            .jsonArray[columnIndex].jsonObject["aliasIndices"]!!
+        val vizPaneColumn = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
+            .jsonArray[columnIndex].jsonObject
+        val valueIndices = vizPaneColumn["valueIndices"]!!
+        val aliasIndices = vizPaneColumn["aliasIndices"]!!
         val dataType = it["dataType"]?.jsonPrimitive?.content.orEmpty()
         val fn = it["fn"]?.jsonPrimitive?.content.orEmpty()
 

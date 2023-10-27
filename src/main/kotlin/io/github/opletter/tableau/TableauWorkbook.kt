@@ -32,14 +32,12 @@ class TableauWorkbook(
 
     private fun updateFullData(cmdResponse: JsonObject) {
         // Update data dictionary if present
-        val vqlCmdResponse = cmdResponse["vqlCmdResponse"]?.jsonObject
-        val layoutStatus = vqlCmdResponse?.get("layoutStatus")?.jsonObject
-        val applicationPresModel = layoutStatus?.get("applicationPresModel")?.jsonObject
-
-        if (applicationPresModel != null && "dataDictionary" in applicationPresModel) {
-            val dataDictionary = applicationPresModel["dataDictionary"]!!.jsonObject
-            if ("dataSegments" in dataDictionary) {
-                val dataSegments = dataDictionary["dataSegments"]!!.jsonObject
+        val applicationPresModel = cmdResponse["vqlCmdResponse"]?.jsonObject?.get("layoutStatus")
+            ?.jsonObject?.get("applicationPresModel")?.jsonObject
+        val dataDictionary = applicationPresModel?.get("dataDictionary")?.jsonObject
+        if (dataDictionary != null) {
+            val dataSegments = dataDictionary["dataSegments"]?.jsonObject
+            if (dataSegments != null) {
                 val dataSegmentscp = dataSegments.toMutableMap()
                 val keys = dataSegmentscp.keys.toList()
                 for (key in keys) {
