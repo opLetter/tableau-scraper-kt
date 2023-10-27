@@ -217,15 +217,10 @@ class TableauWorksheet(
                         .also { println("column $columnName not found") }
 
                 val indices = indexValues.ifEmpty {
-                    if (value !is List<*>) {
-                        listOf(filter["values"]!!.jsonArray.map { it.jsonPrimitive.content }
-                            .indexOf(value.toString()))
-                            .takeIf { i -> i.none { it == -1 } } ?: throw Exception("value $value not found")
-                    } else {
-                        value.map {
-                            filter["values"]!!.jsonArray.map { it.jsonPrimitive.content }.indexOf(value.toString())
-                        }.takeIf { i -> i.none { it == -1 } } ?: throw Exception("value $value not found")
-                    }
+                    val valuesList = if (value !is List<*>) listOf(value) else value
+                    valuesList.map { value ->
+                        filter["values"]!!.jsonArray.indexOfFirst { it.jsonPrimitive.content == value.toString() }
+                    }.takeIf { i -> i.none { it == -1 } } ?: throw Exception("value $value not found")
                 }
 
                 val selectedIndex = when {
@@ -265,7 +260,7 @@ class TableauWorksheet(
                 scraper.dashboardFilter(columnName, if (value is List<*>) value else listOf(value))
             }
             updateFullData(r)
-            return Dashboard.getWorksheetsCmdResponse(scraper, r)
+            Dashboard.getWorksheetsCmdResponse(scraper, r)
         } catch (e: Exception) {
             e.printStackTrace()
             TableauWorkbook(scraper, JsonObject(emptyMap()), JsonObject(emptyMap()), emptyList())
@@ -285,7 +280,7 @@ class TableauWorksheet(
                 dashboard = filter["dashboard"]?.jsonPrimitive?.content ?: scraper.dashboard
             )
             updateFullData(r)
-            return Dashboard.getWorksheetsCmdResponse(scraper, r)
+            Dashboard.getWorksheetsCmdResponse(scraper, r)
         } catch (e: Exception) {
             e.printStackTrace()
             TableauWorkbook(scraper, JsonObject(emptyMap()), JsonObject(emptyMap()), emptyList())
