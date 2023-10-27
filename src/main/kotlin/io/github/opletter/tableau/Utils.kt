@@ -1,6 +1,6 @@
 package io.github.opletter.tableau
 
-import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -38,6 +38,7 @@ internal fun getSelectedFilters(presModel: JsonObject, worksheetName: String): L
         }
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 private fun processFilters(filters: List<List<JsonObject>>, selectedFilters: List<JsonObject>): List<JsonObject> {
     return filters.flatMap { arr ->
         arr.filter { t ->
@@ -67,20 +68,16 @@ private fun processFilters(filters: List<List<JsonObject>>, selectedFilters: Lis
                 buildJsonObject {
                     put("column", c.first)
                     put("ordinal", c.third)
-                    putJsonArray("values") {
-                        values.forEach { add(it) }
-                    }
+                    putJsonArray("values") { addAll(values) }
                     put("globalFieldName", globalFieldName)
                     putJsonArray("selection") {
                         val selections = if (
                             t["all"]?.jsonPrimitive?.booleanOrNull == true ||
                             t["allChecked"]?.jsonPrimitive?.booleanOrNull == true
                         ) values + "all" else selection
-                        selections.forEach { add(it) }
+                        addAll(selections)
                     }
-                    putJsonArray("selectionAlt") {
-                        selectionAlt.forEach { add(it) }
-                    }
+                    putJsonArray("selectionAlt") { addAll(selectionAlt) }
                 }
             }
         }
@@ -120,9 +117,10 @@ internal fun listFilters(
         val (storyboard, dashboard) = if ("sheetPath" in dashboardPresModel) {
             val sheetPath = dashboardPresModel["sheetPath"]!!.jsonObject
             val storyboard = sheetPath["storyboard"]!!.jsonPrimitive.content
-            val dashboard = if (sheetPath["isDashboard"]!!.jsonPrimitive.boolean)
+            val dashboard = if (sheetPath["isDashboard"]!!.jsonPrimitive.boolean) {
                 sheetPath["sheetName"]!!.jsonPrimitive.content
-            else rootDashboard
+            } else rootDashboard
+
             storyboard to dashboard
         } else if ("visualIds" in dashboardPresModel) {
             val visualIds = dashboardPresModel["visualIds"]!!
@@ -248,9 +246,8 @@ internal fun listWorksheet(presModelMap: JsonObject): List<String> {
 internal fun listWorksheetInfo(presModel: JsonObject): List<String> {
     val zones = getZones(presModel)!!
     return zones.values.mapNotNull { z ->
-        z.jsonObject.takeIf {
-            "presModelHolder" in it && "visual" in it["presModelHolder"]!!.jsonObject
-        }?.get("worksheet")?.jsonPrimitive?.content
+        z.jsonObject.takeIf { "visual" in it["presModelHolder"]?.jsonObject.orEmpty() }
+            ?.get("worksheet")?.jsonPrimitive?.content
     }
 }
 
@@ -275,9 +272,7 @@ internal fun getIndicesInfo(
         .jsonObject["genVizDataPresModel"]!!
         .jsonObject
 
-    if ("paneColumnsData" !in genVizDataPresModel) return emptyList()
-
-    val columnsData = genVizDataPresModel["paneColumnsData"]!!.jsonObject
+    val columnsData = genVizDataPresModel["paneColumnsData"]?.jsonObject ?: return emptyList()
 
     return columnsData["vizDataColumns"]!!.jsonArray.flatMap {
         it as JsonObject
