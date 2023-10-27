@@ -56,74 +56,43 @@ class TableauWorkbook(
             println("no data dictionary present in response2")
         }
 
-        // Update parameters if present
         if (applicationPresModel != null) {
+            // Update parameters if present
             val newParameters = getParameterControlVqlResponse(applicationPresModel)
-            val newParameterscsp = newParameters.toMutableList()
-            for (newParam in newParameterscsp) {
-                var found = false
-                for (param in scraper.parameters) {
-                    if (newParam["parameterName"] == param["parameterName"]) {
-                        found = true
-                    }
-                }
-                if (!found) {
-                    scraper.parameters.add(newParam)
-                }
-            }
-        }
+            val key = "parameterName"
+            val scraperParams = scraper.parameters.map { it[key] }
+            scraper.parameters += newParameters.filter { it[key] !in scraperParams }
 
-        // Update filters if present
-        if (applicationPresModel != null) {
+            // Update filters if present
             val newFilters = getFiltersForAllWorksheet(
                 data = cmdResponse,
                 info = JsonObject(emptyMap()),
                 rootDashboard = scraper.dashboard,
                 cmdResponse = true
             )
-            val newFilterscsp = newFilters.toMutableMap()
-            for (worksheet in newFilterscsp.keys) {
-                if (worksheet !in scraper.filters) {
-                    scraper.filters[worksheet] = newFilters[worksheet]!!.toMutableList()
-                } else {
-                    for (newFilter in newFilters[worksheet]!!) {
-                        var found = false
-                        var foundFilterIndex = -1
-                        for ((idx, filter) in scraper.filters[worksheet]!!.withIndex()) {
-                            if (newFilter["globalFieldName"] == filter["globalFieldName"]) {
-                                found = true
-                                foundFilterIndex = idx
-                            }
-                        }
-                        if (!found) {
-                            scraper.filters[worksheet]!!.add(newFilter)
-                        } else {
-                            scraper.filters[worksheet]!!.removeAt(foundFilterIndex)
-                            scraper.filters[worksheet]!!.add(newFilter)
-                        }
+            newFilters.forEach { (ws, newFilters) ->
+                val scraperWorksheetFilters = scraper.filters[ws] ?: mutableListOf()
+                newFilters.forEach { newFilter ->
+                    val foundFilterIndex = scraperWorksheetFilters
+                        .indexOfFirst { it["globalFieldName"] == newFilter["globalFieldName"] }
+                    if (foundFilterIndex != -1) {
+                        scraperWorksheetFilters.removeAt(foundFilterIndex)
                     }
+                    scraperWorksheetFilters.add(newFilter)
                 }
+                scraper.filters[ws] = scraperWorksheetFilters
             }
         }
 
         // Persist zones
-        if (applicationPresModel != null) {
-            val newZones = getZones(applicationPresModel) ?: JsonObject(emptyMap())
-            val newZonesStorage = mutableMapOf<String, JsonObject>()
-            for (zone in newZones.keys) {
-                if (newZones[zone] != null && newZones[zone] != JsonNull) {
-                    val zoneHasVizData = hasVizData(newZones[zone]!!.jsonObject)
-                    if (!zoneHasVizData && zone in scraper.zones) {
-                        newZonesStorage[zone] = scraper.zones[zone]!!.jsonObject.deepCopy()
-                    } else {
-                        newZonesStorage[zone] = newZones[zone]!!.jsonObject.deepCopy()
-                    }
-                }
+        val newZones = applicationPresModel?.let {
+            getZones(it)?.filterNotNullValues()?.mapValues { (key, value) ->
+                val zoneHasVizData = hasVizData(value.jsonObject)
+                val newValue = if (!zoneHasVizData && key in scraper.zones) scraper.zones[key] else value
+                newValue!!.jsonObject.deepCopy()
             }
-            scraper.zones = JsonObject(newZonesStorage)
-        } else {
-            scraper.zones = JsonObject(emptyMap())
-        }
+        }.orEmpty()
+        scraper.zones = JsonObject(newZones)
     }
 
     fun getParameters() = scraper.parameters
@@ -155,23 +124,23 @@ class TableauWorkbook(
 
     fun getSheets(): List<JsonObject> {
         val presModel = getPresModelVizInfo(originalInfo)!!
-        return presModel["workbookPresModel"]?.jsonObject?.get("sheetsInfo")?.jsonArray?.map { t ->
-            t.jsonObject.let {
-                buildJsonObject {
-                    put("sheet", it["sheet"]!!)
-                    put("isDashboard", it["isDashboard"]!!)
-                    put("isVisible", it["isVisible"]!!)
-                    put("namesOfSubsheets", it["namesOfSubsheets"]!!)
-                    put("windowId", it["windowId"]!!)
-                }
+        return presModel["workbookPresModel"]?.jsonObject?.get("sheetsInfo")?.jsonArray?.map {
+            it as JsonObject
+            buildJsonObject {
+                put("sheet", it["sheet"]!!)
+                put("isDashboard", it["isDashboard"]!!)
+                put("isVisible", it["isVisible"]!!)
+                put("namesOfSubsheets", it["namesOfSubsheets"]!!)
+                put("windowId", it["windowId"]!!)
             }
-        } ?: emptyList()
+        }.orEmpty()
     }
 
     suspend fun goToSheet(sheetName: String): TableauWorkbook {
-        val windowId = getSheets().mapNotNull { t ->
-            if (t["sheet"]!!.jsonPrimitive.content == sheetName) t["windowId"] else null
-        }.ifEmpty {
+        val windowId = getSheets().firstNotNullOfOrNull {
+            if (it["sheet"]!!.jsonPrimitive.content == sheetName) it["windowId"] else null
+        }
+        if (windowId == null) {
             println("sheet $sheetName not found")
             return TableauWorkbook(
                 scraper = scraper,
@@ -181,7 +150,7 @@ class TableauWorkbook(
                 cmdResponse = cmdResponse,
             )
         }
-        val r = scraper.goToSheet(windowId[0].jsonPrimitive.content)
+        val r = scraper.goToSheet(windowId.jsonPrimitive.content)
         updateFullData(r)
         scraper.dashboard = sheetName
         return Dashboard.getWorksheetsCmdResponse(scraper, r)
@@ -218,9 +187,9 @@ class TableauWorkbook(
             ?.get("presentationLayerNotification")?.jsonArray?.get(0)?.jsonObject
             ?.get("presModelHolder")?.jsonObject?.get("genExportCrosstabOptionsDialogPresModel")?.jsonObject
             ?.get("thumbnailSheetPickerItems")?.jsonArray
-            ?.firstNotNullOfOrNull { t ->
-                if (t.jsonObject["sheetName"]!!.jsonPrimitive.content == sheetName)
-                    t.jsonObject["sheetdocId"]
+            ?.firstNotNullOfOrNull {
+                if (it.jsonObject["sheetName"]!!.jsonPrimitive.content == sheetName)
+                    it.jsonObject["sheetdocId"]
                 else null
             }?.jsonPrimitive?.content
         if (sheetId == null) {

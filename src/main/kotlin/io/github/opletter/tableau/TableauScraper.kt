@@ -7,6 +7,7 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 
@@ -19,7 +20,7 @@ class TableauScraper(
     override var dashboard: String = ""
     override var tableauData = JsonObject(emptyMap())
     override var dataSegments = JsonObject(emptyMap()) // persistent data dictionary
-    override var parameters = mutableListOf<JsonObject>() // persist parameter controls
+    override var parameters = emptyList<JsonObject>() // persist parameter controls
     override var filters = mutableMapOf<String, MutableList<JsonObject>>() // persist filters per worksheet
     override var zones = JsonObject(emptyMap()) // persist zones
     override val session: HttpClient = HttpClient(CIO) {
@@ -70,6 +71,7 @@ class TableauScraper(
         ).bodyAsText()
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     override suspend fun select(
         worksheetName: String,
         selection: List<Int>,
@@ -80,8 +82,8 @@ class TableauScraper(
             append(
                 "selection",
                 Json.encodeToString(buildJsonObject {
-                    this.put("objectIds", JsonArray(selection.map { JsonPrimitive(it) }))
-                    this.put("selectionType", "tuples")
+                    put("objectIds", buildJsonArray { addAll(selection) })
+                    put("selectionType", "tuples")
                 })
             )
             append("selectOptions", "select-options-simple")
@@ -187,9 +189,7 @@ class TableauScraper(
     }
 
     override suspend fun goToSheet(windowId: String): JsonObject {
-        val payload = formData {
-            append("windowId", windowId)
-        }
+        val payload = formData { append("windowId", windowId) }
 
         val url = "$routePrefix/tabdoc/goto-sheet"
         val response = session.submitFormWithBinaryData(url, payload)

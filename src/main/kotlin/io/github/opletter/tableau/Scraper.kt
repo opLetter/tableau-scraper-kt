@@ -17,7 +17,7 @@ interface Scraper {
     var dashboard: String
     var tableauData: JsonObject
     var dataSegments: JsonObject
-    var parameters: MutableList<JsonObject>
+    var parameters: List<JsonObject>
     var filters: MutableMap<String, MutableList<JsonObject>>
     var zones: JsonObject
     val session: HttpClient
@@ -92,7 +92,7 @@ interface Scraper {
                 presModelMap?.let { modelMap ->
                     dataSegments = modelMap["dataDictionary"]!!.jsonObject["presModelHolder"]!!
                         .jsonObject["genDataDictionaryPresModel"]!!.jsonObject["dataSegments"]!!.jsonObject
-                    parameters = getParameterControlInput(info).toMutableList()
+                    parameters = getParameterControlInput(info)
                 }
                 dashboard = info["sheetName"]?.jsonPrimitive?.content ?: ""
                 filters = getFiltersForAllWorksheet(data, info, rootDashboard = dashboard)

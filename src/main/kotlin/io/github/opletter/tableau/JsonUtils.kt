@@ -5,7 +5,7 @@ import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.api.toDataFrame
 
 internal fun JsonObject.deepCopy(): JsonObject {
-    return JsonObject(toMap().mapValues { (_, value) -> value.deepCopy() })
+    return JsonObject(mapValues { (_, value) -> value.deepCopy() })
 }
 
 internal fun JsonElement.deepCopy(): JsonElement {

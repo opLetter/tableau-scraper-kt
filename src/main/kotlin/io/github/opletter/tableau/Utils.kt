@@ -185,7 +185,7 @@ internal fun listStoryPointsInfo(presModel: JsonObject): List<String> {
     return storypoint.jsonObject["dashboardPresModel"]!!.jsonObject["zones"]!!.jsonObject.values
         .mapNotNull { z ->
             z.jsonObject.takeIf {
-                it["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject?.containsKey("vizData") == true
+                "vizData" in it["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject.orEmpty()
             }?.get("worksheet")?.jsonPrimitive?.content
         }
 }
@@ -209,9 +209,7 @@ internal fun selectWorksheet(
 }
 
 internal fun getPresModelVizData(data: JsonObject): JsonObject? {
-    return data["secondaryInfo"]?.jsonObject?.get("presModelMap")?.jsonObject?.takeIf {
-        it.containsKey("vizData")
-    }
+    return data["secondaryInfo"]?.jsonObject?.get("presModelMap")?.jsonObject?.takeIf { "vizData" in it }
 }
 
 internal fun getPresModelVizDataWithoutViz(data: JsonObject): JsonObject? {
@@ -219,15 +217,14 @@ internal fun getPresModelVizDataWithoutViz(data: JsonObject): JsonObject? {
 }
 
 internal fun getPresModelVizInfo(info: JsonObject): JsonObject? {
-    return info["worldUpdate"]?.jsonObject?.get("applicationPresModel")?.jsonObject?.takeIf {
-        it.containsKey("workbookPresModel")
-    }
+    return info["worldUpdate"]?.jsonObject?.get("applicationPresModel")?.jsonObject
+        ?.takeIf { "workbookPresModel" in it }
 }
 
 internal fun listWorksheetCmdResponse(presModel: JsonObject): List<JsonObject> {
-    return getZones(presModel)?.filter { (_, zone) ->
-        zone.jsonObject["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject?.containsKey("vizData") == true
-    }?.map { it.value.jsonObject } ?: emptyList()
+    return getZones(presModel)?.values?.filter { zone ->
+        "vizData" in zone.jsonObject["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject.orEmpty()
+    }?.map { it.jsonObject }.orEmpty()
 }
 
 internal fun listWorksheet(presModelMap: JsonObject): List<String> {
@@ -489,7 +486,7 @@ internal fun getWorksheetCmdResponse(selectedZone: JsonObject, dataFull: JsonObj
 }
 
 internal fun hasVizData(zone: JsonObject): Boolean {
-    return zone["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject?.get("vizData")?.jsonObject != null
+    return "vizData" in zone["presModelHolder"]?.jsonObject?.get("visual")?.jsonObject.orEmpty()
 }
 
 private inline fun getParameterControl(
