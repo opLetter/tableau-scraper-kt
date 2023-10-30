@@ -455,7 +455,7 @@ internal fun getWorksheetCmdResponse(selectedZone: JsonObject, dataFull: JsonObj
 
     val result = columnsData["vizDataColumns"]!!.jsonArray.mapNotNull {
         it as JsonObject
-        val fieldCaption = it["fieldCaption"]?.jsonPrimitive?.content.orEmpty()
+        val fieldCaption = it["fieldCaption"]?.jsonPrimitive?.content ?: return@mapNotNull null
         val paneIndex = it["paneIndices"]!!.jsonArray[0].jsonPrimitive.int
         val columnIndex = it["columnIndices"]!!.jsonArray[0].jsonPrimitive.int
         val vizPaneColumn = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
