@@ -56,7 +56,7 @@ private fun processFilters(filters: List<JsonObject>, selectedFilters: List<Json
         }
         val selection = tuples.mapNotNull { z ->
             val x = z.jsonObject["t"]?.jsonArray?.getOrNull(0)
-            if (x != null && x.jsonObject["s"]?.jsonPrimitive?.booleanOrNull == true) {
+            if (x != null && z.jsonObject["s"]?.jsonPrimitive?.booleanOrNull == true) {
                 x.jsonObject["v"]!!.jsonPrimitive.content
             } else null
         }
