@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "io.github.opletter.tableau"
-version = "0.1-SNAPSHOT"
+version = "0.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -29,7 +29,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(11)
+    jvmToolchain(17)
 }
 
 val sourcesJar by tasks.registering(Jar::class) {
