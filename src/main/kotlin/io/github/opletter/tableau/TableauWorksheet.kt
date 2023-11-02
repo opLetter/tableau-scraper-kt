@@ -207,7 +207,7 @@ class TableauWorksheet(
         dashboardFilter: Boolean = false,
         membershipTarget: Boolean = true,
         filterDelta: Boolean = false,
-        indexValues: List<Int> = emptyList(),
+        indexValues: List<Int>? = null,
         noCheck: Boolean = false,
     ): TableauWorkbook {
         return try {
@@ -216,39 +216,45 @@ class TableauWorksheet(
                     ?: return TableauWorkbook(scraper, JsonObject(emptyMap()), JsonObject(emptyMap()), emptyList())
                         .also { println("column $columnName not found") }
 
-                val indices = indexValues.ifEmpty {
+                val indices = indexValues ?: run {
                     val valuesList = if (value !is List<*>) listOf(value) else value
                     valuesList.map { value ->
                         filter["values"]!!.jsonArray.indexOfFirst { it.jsonPrimitive.content == value.toString() }
                     }.takeIf { i -> i.none { it == -1 } } ?: throw Exception("value $value not found")
                 }
 
+                // Note: the original code gets these indices among the selections themselves, but from what I can tell
+                // they should be the indices from "values", so that's what's used here
                 val selectedIndex = when {
                     filter["selection"]!!.jsonArray.isNotEmpty() -> {
-                        filter["selection"]!!.jsonArray
-                            .withIndex()
-                            .filter { value != it.value }
-                            .map { it.index }
+                        filter["selection"]!!.jsonArray.map { selection ->
+                            filter["values"]!!.jsonArray.indexOfFirst { it == selection }
+                        }
                     }
 
                     else -> {
                         val data = filter["selectionAlt"]?.jsonArray?.getOrNull(0)?.jsonObject?.get("domainTables")
-                            ?: JsonArray(emptyList())
-                        data.jsonArray
-                            .withIndex()
-                            .filter { it.value.jsonObject["isSelected"]?.jsonPrimitive?.booleanOrNull == true }
-                            .map { it.index }
+                            ?.jsonArray.orEmpty()
+                        data.filter { it.jsonObject["isSelected"]?.jsonPrimitive?.booleanOrNull == true }
+                            .map { selection ->
+                                filter["values"]!!.jsonArray.indexOfFirst { it == selection }
+                            }
                     }
                 }
 
                 if (dashboardFilter) {
                     scraper.dashboardFilter(columnName, if (value is List<*>) value else listOf(value))
                 } else {
+                    val toRemove = if (!filterDelta) emptyList() else selectedIndex.distinct() - (indices.toSet() + -1)
+                    // Note: this check isn't in the original code, but it seems useful to prevent some crashes
+                    if (filterDelta && indices.isEmpty() && toRemove.isEmpty()) {
+                        return scraper.getWorkbook()
+                    }
                     scraper.filter(
                         worksheetName = name,
                         globalFieldName = filter["globalFieldName"]!!.jsonPrimitive.content,
                         selection = indices,
-                        selectionToRemove = if (!filterDelta) emptyList() else selectedIndex,
+                        selectionToRemove = toRemove,
                         membershipTarget = membershipTarget,
                         filterDelta = filterDelta,
                         storyboard = filter["storyboard"]?.jsonPrimitive?.content,
