@@ -1,5 +1,6 @@
 package io.github.opletter.tableau
 
+import io.github.opletter.tableau.data.Sheet
 import io.github.opletter.tableau.data.StoryPointHolder
 import kotlinx.serialization.json.*
 import org.jetbrains.kotlinx.dataframe.DataFrame
@@ -120,23 +121,23 @@ class TableauWorkbook(
         return Dashboard.getWorksheetsCmdResponse(scraper, response)
     }
 
-    fun getSheets(): List<JsonObject> {
+    fun getSheets(): List<Sheet> {
         val presModel = getPresModelVizInfo(originalInfo)!!
         return presModel["workbookPresModel"]?.jsonObject?.get("sheetsInfo")?.jsonArray?.map {
             it as JsonObject
-            buildJsonObject {
-                put("sheet", it["sheet"]!!)
-                put("isDashboard", it["isDashboard"]!!)
-                put("isVisible", it["isVisible"]!!)
-                put("namesOfSubsheets", it["namesOfSubsheets"]!!)
-                put("windowId", it["windowId"]!!)
-            }
+            Sheet(
+                sheet = it["sheet"]!!.jsonPrimitive.content,
+                isDashboard = it["isDashboard"]!!.jsonPrimitive.boolean,
+                isVisible = it["isVisible"]!!.jsonPrimitive.boolean,
+                namesOfSubsheets = it["namesOfSubsheets"]!!.jsonArray.map { it.jsonPrimitive.content },
+                windowId = it["windowId"]!!.jsonPrimitive.content,
+            )
         }.orEmpty()
     }
 
     suspend fun goToSheet(sheetName: String): TableauWorkbook {
         val windowId = getSheets().firstNotNullOfOrNull {
-            if (it["sheet"]!!.jsonPrimitive.content == sheetName) it["windowId"] else null
+            if (it.sheet == sheetName) it.windowId else null
         }
         if (windowId == null) {
             println("sheet $sheetName not found")
@@ -148,7 +149,7 @@ class TableauWorkbook(
                 cmdResponse = cmdResponse,
             )
         }
-        val r = scraper.goToSheet(windowId.jsonPrimitive.content)
+        val r = scraper.goToSheet(windowId)
         updateFullData(r)
         scraper.dashboard = sheetName
         return Dashboard.getWorksheetsCmdResponse(scraper, r)

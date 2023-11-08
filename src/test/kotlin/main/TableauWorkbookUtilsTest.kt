@@ -1,5 +1,6 @@
 package main
 
+import io.github.opletter.tableau.data.Sheet
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
@@ -32,13 +33,13 @@ class TableauWorkbookUtilsTest {
         val sheets = workbook.getSheets()
         assertEquals(
             listOf(
-                buildJsonObject {
-                    put("sheet", "[WORKSHEET1]")
-                    put("isDashboard", false)
-                    put("isVisible", true)
-                    put("namesOfSubsheets", JsonArray(emptyList()))
-                    put("windowId", "{XXXXX}")
-                }
+                Sheet(
+                    sheet = "[WORKSHEET1]",
+                    isDashboard = false,
+                    isVisible = true,
+                    namesOfSubsheets = emptyList(),
+                    windowId = "{XXXXX}",
+                )
             ),
             sheets
         )
