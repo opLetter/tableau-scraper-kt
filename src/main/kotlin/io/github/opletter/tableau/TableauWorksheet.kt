@@ -29,7 +29,7 @@ class TableauWorksheet(
         }
         return indices.map { index ->
             SelectableItem(
-                column = index["fieldCaption"]!!.jsonPrimitive.content,
+                column = index.fieldCaption,
                 values = getData(dataDictionary, listOf(index)).values.firstOrNull()
                     ?.map { it.jsonPrimitive.content }.orEmpty()
             )
@@ -41,7 +41,7 @@ class TableauWorksheet(
             val presModel = originalData["vqlCmdResponse"]!!.jsonObject["layoutStatus"]!!
                 .jsonObject["applicationPresModel"]!!.jsonObject
             getIndicesInfoVqlResponse(presModel, name, noSelectFilter = true)
-                .filter { it["fieldCaption"]!!.jsonPrimitive.content == column }
+                .filter { it.fieldCaption == column }
                 .ifEmpty { getIndicesInfoStoryPoint(presModel, name, noSelectFilter = true) }
         } else {
             val presModel = getPresModelVizData(originalData)
@@ -51,7 +51,7 @@ class TableauWorksheet(
                 getIndicesInfo(presModel, name, noSelectFilter = true)
             else getIndicesInfoStoryPoint(presModel, name, noSelectFilter = true)
         }
-        return columnObj.firstOrNull { it["fieldCaption"]!!.jsonPrimitive.content == column }
+        return columnObj.firstOrNull { it.fieldCaption == column }
             ?.let { getData(dataDictionary, listOf(it)).values.firstOrNull() }
             ?: JsonArray(emptyList())
     }
@@ -75,8 +75,8 @@ class TableauWorksheet(
             )
         }
         return data
-            .filter { it["fn"]!!.jsonPrimitive.content == "[system:visual].[tuple_id]" }
-            .map { t -> t["tupleIds"]!!.jsonArray.map { it.jsonPrimitive.int } }
+            .filter { it.fn == "[system:visual].[tuple_id]" }
+            .map { t -> t.tupleIds }
     }
 
     suspend fun select(column: String, value: String): TableauWorkbook {
@@ -193,7 +193,7 @@ class TableauWorksheet(
             getIndicesInfoVqlResponse(presModel, name, noSelectFilter = true)
         } else {
             getIndicesInfo(presModel, name, noSelectFilter = true)
-        }.map { it["fieldCaption"]!!.jsonPrimitive.content }
+        }.map { it.fieldCaption }
     }
 
     fun getFilters(): List<JsonObject> {

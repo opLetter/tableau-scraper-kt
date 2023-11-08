@@ -49,8 +49,8 @@ class UtilsTest {
         val presModel = getPresModelVizData(data)!!
         val indicesInfo = getIndicesInfo(presModel, "[WORKSHEET1]")
         assertEquals(2, indicesInfo.size)
-        assertEquals("[FIELD1]", indicesInfo[0]["fieldCaption"]!!.jsonPrimitive.content)
-        assertEquals("[FIELD2]", indicesInfo[1]["fieldCaption"]!!.jsonPrimitive.content)
+        assertEquals("[FIELD1]", indicesInfo[0].fieldCaption)
+        assertEquals("[FIELD2]", indicesInfo[1].fieldCaption)
 
         // Check noSelectFilter parameter
         val filteredIndicesInfo = getIndicesInfo(presModel, "[WORKSHEET1]", noSelectFilter = false)
@@ -216,8 +216,8 @@ class UtilsTest {
         val indicesInfo = getIndicesInfoVqlResponse(presModel, "[WORKSHEET1]")
 
         assertEquals(2, indicesInfo.size)
-        assertEquals("[FIELD1]", indicesInfo[0]["fieldCaption"]!!.jsonPrimitive.content)
-        assertEquals("[FIELD2]", indicesInfo[1]["fieldCaption"]!!.jsonPrimitive.content)
+        assertEquals("[FIELD1]", indicesInfo[0].fieldCaption)
+        assertEquals("[FIELD2]", indicesInfo[1].fieldCaption)
 
         // check noSelectFilter parameter
         val indicesInfoWithFilter = getIndicesInfoVqlResponse(presModel, "[WORKSHEET1]", noSelectFilter = false)

@@ -1,7 +1,6 @@
 package io.github.opletter.tableau
 
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 object SelectItem {
     suspend fun get(scraper: Scraper, data: JsonObject, info: JsonObject): TableauWorkbook {
@@ -16,7 +15,7 @@ object SelectItem {
         val result = getIndicesInfo(presModel, selectedWorksheet, noSelectFilter = false)
 
         for (idx in result.indices) {
-            println("[$idx] ${result[idx]["fieldCaption"]!!.jsonPrimitive.content}")
+            println("[$idx] ${result[idx].fieldCaption}")
         }
 
         print("select field by index : ")
@@ -25,7 +24,7 @@ object SelectItem {
             throw Exception("you must select at least one field")
         }
         val field = result[selectedIndex.toInt()]
-        println("you have selected ${field["fieldCaption"]!!.jsonPrimitive.content}")
+        println("you have selected ${field.fieldCaption}")
 
         val dataFull = getDataFull(presModel, scraper.dataSegments)
         val frameData = getData(dataFull, listOf(field))

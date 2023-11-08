@@ -1,5 +1,7 @@
 package io.github.opletter.tableau
 
+import io.github.opletter.tableau.data.IndicesInfo
+import io.github.opletter.tableau.data.LimitedIndicesInfo
 import io.github.opletter.tableau.data.StoryPointEntry
 import io.github.opletter.tableau.data.StoryPointHolder
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -261,7 +263,7 @@ internal fun getIndicesInfo(
     worksheet: String,
     noSelectFilter: Boolean = true,
     noFieldCaption: Boolean = false,
-): List<JsonObject> {
+): List<IndicesInfo> {
     val genVizDataPresModel = presModelMap["vizData"]!!
         .jsonObject["presModelHolder"]!!
         .jsonObject["genPresModelMapPresModel"]!!
@@ -285,16 +287,14 @@ internal fun getIndicesInfo(
                 val paneColumnsList = columnsData["paneColumnsList"]!!.jsonArray[paneIndex]
                     .jsonObject["vizPaneColumns"]!!.jsonArray[columnIndex].jsonObject
 
-                buildJsonObject {
-                    put("fieldCaption", fieldCaption?.jsonPrimitive?.content.orEmpty())
-                    put("tupleIds", paneColumnsList["tupleIds"]!!)
-                    put("valueIndices", paneColumnsList["valueIndices"]!!)
-                    put("aliasIndices", paneColumnsList["aliasIndices"]!!)
-                    put("dataType", it["dataType"]?.jsonPrimitive?.content.orEmpty())
-                    put("paneIndices", paneIndex)
-                    put("columnIndices", columnIndex)
-                    put("fn", it["fn"]?.jsonPrimitive?.content.orEmpty())
-                }
+                IndicesInfo(
+                    fieldCaption = fieldCaption?.jsonPrimitive?.content.orEmpty(),
+                    tupleIds = paneColumnsList["tupleIds"]!!.jsonArray.map { it.jsonPrimitive.int },
+                    valueIndices = paneColumnsList["valueIndices"]!!.jsonArray.map { it.jsonPrimitive.int },
+                    aliasIndices = paneColumnsList["aliasIndices"]!!.jsonArray.map { it.jsonPrimitive.int },
+                    dataType = it["dataType"]?.jsonPrimitive?.content.orEmpty(),
+                    fn = it["fn"]?.jsonPrimitive?.content.orEmpty(),
+                )
             }
         } else emptyList()
     }
@@ -305,7 +305,7 @@ private fun getIndicesInfoSpecial(
     worksheet: String,
     noSelectFilter: Boolean = true,
     noFieldCaption: Boolean = false,
-): List<JsonObject> {
+): List<IndicesInfo> {
     val zone = zones.firstOrNull { it["worksheet"]!!.jsonPrimitive.content == worksheet }
         ?: return emptyList()
 
@@ -322,20 +322,18 @@ private fun getIndicesInfoSpecial(
             val columnIndex = it["columnIndices"]!!.jsonArray[0].jsonPrimitive.int
             val vizPaneColumn = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
                 .jsonArray[columnIndex].jsonObject
-            val tupleIds = vizPaneColumn["tupleIds"]!!
-            val valueIndices = vizPaneColumn["valueIndices"]!!
-            val aliasIndices = vizPaneColumn["aliasIndices"]!!
+            val tupleIds = vizPaneColumn["tupleIds"]!!.jsonArray.map { it.jsonPrimitive.int }
+            val valueIndices = vizPaneColumn["valueIndices"]!!.jsonArray.map { it.jsonPrimitive.int }
+            val aliasIndices = vizPaneColumn["aliasIndices"]!!.jsonArray.map { it.jsonPrimitive.int }
 
-            buildJsonObject {
-                put("fieldCaption", fieldCaption?.jsonPrimitive?.content.orEmpty())
-                put("tupleIds", tupleIds)
-                put("valueIndices", valueIndices)
-                put("aliasIndices", aliasIndices)
-                put("dataType", it["dataType"]?.jsonPrimitive?.content.orEmpty())
-                put("paneIndices", paneIndex)
-                put("columnIndices", columnIndex)
-                put("fn", it["fn"]?.jsonPrimitive?.content.orEmpty())
-            }
+            IndicesInfo(
+                fieldCaption = fieldCaption?.jsonPrimitive?.content.orEmpty(),
+                tupleIds = tupleIds,
+                valueIndices = valueIndices,
+                aliasIndices = aliasIndices,
+                dataType = it["dataType"]?.jsonPrimitive?.content.orEmpty(),
+                fn = it["fn"]?.jsonPrimitive?.content.orEmpty(),
+            )
         } else null
     }
 }
@@ -345,7 +343,7 @@ internal fun getIndicesInfoStoryPoint(
     worksheet: String,
     noSelectFilter: Boolean = true,
     noFieldCaption: Boolean = false,
-): List<JsonObject> =
+): List<IndicesInfo> =
     getIndicesInfoSpecial(listWorksheetStoryPoint(presModel), worksheet, noSelectFilter, noFieldCaption)
 
 internal fun listWorksheetStoryPoint(
@@ -399,32 +397,39 @@ internal fun onDataValue(valueIndex: Int, data: JsonArray, cstring: JsonArray): 
     return if (valueIndex >= 0) data[valueIndex] else cstring[abs(valueIndex) - 1]
 }
 
-internal fun getData(dataFull: JsonObject, indicesInfo: List<JsonObject>): Map<String, JsonArray> {
+internal enum class IndexMode {
+    VALUE, ALIAS
+}
+
+internal fun getData(dataFull: JsonObject, indicesInfo: List<LimitedIndicesInfo>): Map<String, JsonArray> {
     val cstring = dataFull["cstring"]?.jsonArray ?: JsonArray(emptyList())
 
-    fun processIndices(index: JsonObject, suffix: String, useFn: Boolean): Pair<String, JsonArray>? {
-        val t = dataFull[index["dataType"]!!.jsonPrimitive.content]?.jsonArray ?: cstring
-        return index["${suffix}Indices"]!!.jsonArray.mapNotNull { idx ->
-            val intValue = idx.jsonPrimitive.int
-            if (intValue < t.size) onDataValue(intValue, t, cstring) else null
+    fun processIndices(index: LimitedIndicesInfo, mode: IndexMode, useFn: Boolean): Pair<String, JsonArray>? {
+        val x = when (mode) {
+            IndexMode.VALUE -> index.valueIndices
+            IndexMode.ALIAS -> index.aliasIndices
+        }
+        val t = dataFull[index.dataType]?.jsonArray ?: cstring
+        return x.mapNotNull { idx ->
+            if (idx < t.size) onDataValue(idx, t, cstring) else null
         }.takeIf { it.isNotEmpty() }?.let { arr ->
-            val fn = index["fn"]!!.jsonPrimitive.content.takeIf { useFn && it.isNotEmpty() }?.let { "-$it" }.orEmpty()
-            val key = "${index["fieldCaption"]!!.jsonPrimitive.content}$fn-$suffix"
+            val fn = index.fn.takeIf { useFn && it.isNotEmpty() }?.let { "-$it" }.orEmpty()
+            val key = "${index.fieldCaption}$fn-${mode.name.lowercase()}"
             key to JsonArray(arr)
         }
     }
     // original code handles case with multiple indicesInfo with same fieldCaption by adding fn
     // This should do the same thing, but by handling duplicates at same time
     return indicesInfo
-        .groupBy { it["fieldCaption"]!!.jsonPrimitive.content }
+        .groupBy { it.fieldCaption }
         .flatMap { (_, indices) ->
-            val a = indices.filter { it["valueIndices"]!!.jsonArray.isNotEmpty() }
-            val b = indices.filter { it["aliasIndices"]!!.jsonArray.isNotEmpty() }
+            val a = indices.filter { it.valueIndices.isNotEmpty() }
+            val b = indices.filter { it.aliasIndices.isNotEmpty() }
             listOfNotNull(
-                a.firstOrNull()?.let { processIndices(it, "value", false) },
-                b.firstOrNull()?.let { processIndices(it, "alias", false) },
-                (if (a.size > 1) a.last() else null)?.let { processIndices(it, "value", true) },
-                (if (b.size > 1) b.last() else null)?.let { processIndices(it, "alias", true) },
+                a.firstOrNull()?.let { processIndices(it, IndexMode.VALUE, false) },
+                b.firstOrNull()?.let { processIndices(it, IndexMode.ALIAS, false) },
+                (if (a.size > 1) a.last() else null)?.let { processIndices(it, IndexMode.VALUE, true) },
+                (if (b.size > 1) b.last() else null)?.let { processIndices(it, IndexMode.ALIAS, true) },
             )
         }.toMap()
 }
@@ -434,7 +439,7 @@ internal fun getIndicesInfoVqlResponse(
     worksheet: String,
     noSelectFilter: Boolean = true,
     noFieldCaption: Boolean = false,
-): List<JsonObject> =
+): List<IndicesInfo> =
     getIndicesInfoSpecial(listWorksheetCmdResponse(presModel), worksheet, noSelectFilter, noFieldCaption)
 
 internal fun listStoryPointsCmdResponse(presModel: JsonObject, scraper: Scraper? = null): List<JsonObject> =
@@ -462,20 +467,18 @@ internal fun getWorksheetCmdResponse(selectedZone: JsonObject, dataFull: JsonObj
         val columnIndex = it["columnIndices"]!!.jsonArray[0].jsonPrimitive.int
         val vizPaneColumn = columnsData["paneColumnsList"]!!.jsonArray[paneIndex].jsonObject["vizPaneColumns"]!!
             .jsonArray[columnIndex].jsonObject
-        val valueIndices = vizPaneColumn["valueIndices"]!!
-        val aliasIndices = vizPaneColumn["aliasIndices"]!!
+        val valueIndices = vizPaneColumn["valueIndices"]!!.jsonArray.map { it.jsonPrimitive.int }
+        val aliasIndices = vizPaneColumn["aliasIndices"]!!.jsonArray.map { it.jsonPrimitive.int }
         val dataType = it["dataType"]?.jsonPrimitive?.content.orEmpty()
         val fn = it["fn"]?.jsonPrimitive?.content.orEmpty()
 
-        buildJsonObject {
-            put("fieldCaption", fieldCaption)
-            put("valueIndices", valueIndices)
-            put("aliasIndices", aliasIndices)
-            put("dataType", dataType)
-            put("paneIndices", paneIndex)
-            put("columnIndices", columnIndex)
-            put("fn", fn)
-        }
+        LimitedIndicesInfo(
+            fieldCaption = fieldCaption,
+            valueIndices = valueIndices,
+            aliasIndices = aliasIndices,
+            dataType = dataType,
+            fn = fn,
+        )
     }
     return getData(dataFull, result)
 }
@@ -541,13 +544,13 @@ internal fun getWorksheetDownloadCmdResponse(
     val result = underlyingDataTableColumns.mapNotNull { t ->
         t as JsonObject
         t["fieldCaption"]?.let {
-            buildJsonObject {
-                put("fieldCaption", it)
-                put("valueIndices", t["valueIndices"]!!)
-                put("aliasIndices", t["aliasIndices"]!!)
-                put("dataType", t["dataType"]!!)
-                put("fn", t["fn"] ?: JsonPrimitive(""))
-            }
+            LimitedIndicesInfo(
+                fieldCaption = it.jsonPrimitive.content,
+                valueIndices = t["valueIndices"]!!.jsonArray.map { it.jsonPrimitive.int },
+                aliasIndices = t["aliasIndices"]!!.jsonArray.map { it.jsonPrimitive.int },
+                dataType = t["dataType"]!!.jsonPrimitive.content,
+                fn = t["fn"]?.jsonPrimitive?.content.orEmpty(),
+            )
         }
     }
     return getData(dataFull, result)
