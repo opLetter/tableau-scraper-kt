@@ -1,6 +1,7 @@
 package main
 
 import io.github.opletter.tableau.Dashboard
+import io.github.opletter.tableau.data.SelectableItem
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.*
 import org.junit.jupiter.api.Test
@@ -39,18 +40,8 @@ class TableauWorksheetTest {
 
         assertEquals(
             listOf(
-                buildJsonObject {
-                    put("column", "[FIELD1]")
-                    putJsonArray("values") {
-                        add("2"); add("3"); add("4"); add("5")
-                    }
-                },
-                buildJsonObject {
-                    put("column", "[FIELD2]")
-                    putJsonArray("values") {
-                        add("6"); add("7"); add("8"); add("9")
-                    }
-                }
+                SelectableItem(column = "[FIELD1]", values = listOf("2", "3", "4", "5")),
+                SelectableItem(column = "[FIELD2]", values = listOf("6", "7", "8", "9")),
             ),
             selectableColumns
         )
@@ -121,18 +112,8 @@ class TableauWorksheetTest {
         val selectableColumns = tableauDataFrame.getSelectableItems()
         assertEquals(
             listOf(
-                buildJsonObject {
-                    put("column", "[FIELD1]")
-                    putJsonArray("values") {
-                        add("2"); add("3"); add("4"); add("5")
-                    }
-                },
-                buildJsonObject {
-                    put("column", "[FIELD2]")
-                    putJsonArray("values") {
-                        add("6"); add("7"); add("8"); add("9")
-                    }
-                }
+                SelectableItem(column = "[FIELD1]", values = listOf("2", "3", "4", "5")),
+                SelectableItem(column = "[FIELD2]", values = listOf("6", "7", "8", "9")),
             ),
             selectableColumns
         )

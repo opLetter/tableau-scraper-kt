@@ -1,5 +1,6 @@
 package io.github.opletter.tableau
 
+import io.github.opletter.tableau.data.SelectableItem
 import kotlinx.serialization.json.*
 import org.jetbrains.kotlinx.dataframe.DataFrame
 
@@ -15,7 +16,7 @@ class TableauWorksheet(
     val data = dataFrame
     private val dataDictionary = dataFull
 
-    fun getSelectableItems(): List<JsonObject> {
+    fun getSelectableItems(): List<SelectableItem> {
         val indices = if (cmdResponse) {
             val presModel = originalData["vqlCmdResponse"]!!.jsonObject["layoutStatus"]!!
                 .jsonObject["applicationPresModel"]!!.jsonObject
@@ -27,13 +28,11 @@ class TableauWorksheet(
                 ?: getIndicesInfoStoryPoint(getPresModelVizInfo(originalInfo)!!, name, noSelectFilter = true)
         }
         return indices.map { index ->
-            buildJsonObject {
-                put("column", index["fieldCaption"]!!.jsonPrimitive.content)
-                put(
-                    "values",
-                    getData(dataDictionary, listOf(index)).values.firstOrNull() ?: JsonArray(emptyList())
-                )
-            }
+            SelectableItem(
+                column = index["fieldCaption"]!!.jsonPrimitive.content,
+                values = getData(dataDictionary, listOf(index)).values.firstOrNull()
+                    ?.map { it.jsonPrimitive.content }.orEmpty()
+            )
         }
     }
 

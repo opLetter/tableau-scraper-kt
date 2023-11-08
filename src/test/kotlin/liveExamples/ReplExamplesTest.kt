@@ -103,8 +103,8 @@ class ReplExamplesTest {
         var wb = ts.getWorkbook()
         val ws = ts.getWorksheet("New Map")
 
-        val counties = ws.getSelectableItems().firstOrNull { it["column"]!!.jsonPrimitive.content == "County" }
-            ?.get("values")?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty().take(20)
+        val counties = ws.getSelectableItems().firstOrNull { it.column == "County" }
+            ?.values.orEmpty().take(20)
         println(counties)
 
         wb.setParameter("Key Metrics", "Race")
@@ -149,8 +149,7 @@ class ReplExamplesTest {
 
         val selects = ws.getSelectableItems()
 
-        val dates = selects.firstOrNull { it["column"]!!.jsonPrimitive.content == "ATTR(DATE_FOR_REPORT)" }
-            ?.get("values")?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty()
+        val dates = selects.firstOrNull { it.column == "ATTR(DATE_FOR_REPORT)" }?.values.orEmpty()
         println(dates)
 
         for (date in dates.slice(dates.indexOf("1/5/2021 12:00:00 AM") + 1..<dates.indexOf("1/1/2021 12:00:00 AM"))) {
