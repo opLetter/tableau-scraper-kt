@@ -1,6 +1,6 @@
 package io.github.opletter.tableau
 
-
+import io.github.opletter.tableau.data.StoryPointHolder
 import kotlinx.serialization.json.*
 import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.io.readCSV
@@ -211,14 +211,14 @@ class TableauWorkbook(
         return DataFrame.readCSV(r3.byteInputStream(), delimiter = '\t')
     }
 
-    fun getStoryPoints(): JsonObject {
+    fun getStoryPoints(): StoryPointHolder {
         return getStoryPointsFromInfo(originalInfo)
     }
 
     suspend fun goToStoryPoint(storyPointId: Int): TableauWorkbook {
         val storyPointResult = getStoryPoints()
         val r = scraper.setActiveStoryPoint(
-            storyBoard = storyPointResult["storyBoard"]!!.jsonPrimitive.content,
+            storyBoard = storyPointResult.storyBoard,
             storyPointId = storyPointId.toString()
         )
         updateFullData(r)

@@ -1,5 +1,7 @@
 package io.github.opletter.tableau
 
+import io.github.opletter.tableau.data.StoryPointEntry
+import io.github.opletter.tableau.data.StoryPointHolder
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 import kotlin.collections.component1
@@ -507,12 +509,9 @@ internal fun getParameterControlInput(info: JsonObject): List<JsonObject> =
 internal fun getParameterControlVqlResponse(presModel: JsonObject): List<JsonObject> =
     getParameterControl({ getZones(presModel)!! }, { it.values })
 
-internal fun getStoryPointsFromInfo(info: JsonObject): JsonObject {
-    val storyBoard = info["sheetName"] ?: JsonPrimitive("")
-    val result = buildJsonObject {
-        put("storyBoard", storyBoard)
-        put("storyPoints", JsonArray(emptyList()))
-    }
+internal fun getStoryPointsFromInfo(info: JsonObject): StoryPointHolder {
+    val storyBoard = info["sheetName"]?.jsonPrimitive?.content.orEmpty()
+    val result = StoryPointHolder(storyBoard, emptyList())
 
     if ("sheetName" !in info) {
         println("sheet name not found")
@@ -525,17 +524,14 @@ internal fun getStoryPointsFromInfo(info: JsonObject): JsonObject {
             ?.get("storypointNavItems")
             ?: return@mapNotNull null
         t.jsonArray.map {
-            buildJsonObject {
-                put("storyPointId", it.jsonObject["storyPointId"]!!)
-                put("storyPointCaption", it.jsonObject["storyPointCaption"]!!)
-            }
-        }.let { JsonArray(it) }
+            StoryPointEntry(
+                it.jsonObject["storyPointId"]!!.jsonPrimitive.int,
+                it.jsonObject["storyPointCaption"]!!.jsonPrimitive.content
+            )
+        }
     }
 
-    return buildJsonObject {
-        put("storyBoard", storyBoard)
-        put("storyPoints", JsonArray(storyPointsList))
-    }
+    return StoryPointHolder(storyBoard, storyPointsList)
 }
 
 internal fun getWorksheetDownloadCmdResponse(

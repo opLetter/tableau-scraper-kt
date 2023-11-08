@@ -108,9 +108,9 @@ class TableauWorkbookUtilsTest {
         val workbook = scraper.getWorkbook()
         val storyPointResult = workbook.getStoryPoints()
 
-        assertEquals("[WORKSHEET1]", storyPointResult["storyBoard"]!!.jsonPrimitive.content)
-        assertEquals(1, storyPointResult["storyPoints"]!!.jsonArray.size)
-        assertEquals(12, storyPointResult["storyPoints"]!!.jsonArray[0].jsonArray.size)
+        assertEquals("[WORKSHEET1]", storyPointResult.storyBoard)
+        assertEquals(1, storyPointResult.storyPoints.size)
+        assertEquals(12, storyPointResult.storyPoints[0].size)
 
         val scraper2 = FakeScraper()
         scraper2.loads(fakeUri)
@@ -118,7 +118,7 @@ class TableauWorkbookUtilsTest {
         val workbook2 = scraper2.getWorkbook()
         val storyPointResult2 = workbook2.getStoryPoints()
 
-        assertEquals(emptyList(), storyPointResult2["storyPoints"]!!.jsonArray)
+        assertEquals(emptyList(), storyPointResult2.storyPoints)
     }
 
     @Test
