@@ -1,9 +1,12 @@
 package main
 
+import io.github.opletter.tableau.data.ParameterInfo
 import io.github.opletter.tableau.data.Sheet
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -284,24 +287,16 @@ class TableauWorkbookUtilsTest {
 
             assertEquals(
                 listOf(
-                    buildJsonObject {
-                        put("column", "[INPUT_NAME1]")
-                        put("values", buildJsonArray {
-                            add("select1")
-                            add("select2")
-                            add("select3")
-                        })
-                        put("parameterName", "[Parameters].[Parameter 1]")
-                    },
-                    buildJsonObject {
-                        put("column", "[INPUT_NAME2]")
-                        put("values", buildJsonArray {
-                            add("select4")
-                            add("select5")
-                            add("select6")
-                        })
-                        put("parameterName", "[Parameters].[Parameter 1]")
-                    },
+                    ParameterInfo(
+                        column = "[INPUT_NAME1]",
+                        values = listOf("select1", "select2", "select3"),
+                        parameterName = "[Parameters].[Parameter 1]"
+                    ),
+                    ParameterInfo(
+                        column = "[INPUT_NAME2]",
+                        values = listOf("select4", "select5", "select6"),
+                        parameterName = "[Parameters].[Parameter 1]"
+                    ),
                 ), parameters
             )
         }
@@ -316,24 +311,16 @@ class TableauWorkbookUtilsTest {
 
             assertEquals(
                 listOf(
-                    buildJsonObject {
-                        put("column", "[INPUT_NAME1]")
-                        put("values", buildJsonArray {
-                            add("select1")
-                            add("select2")
-                            add("select3")
-                        })
-                        put("parameterName", "[Parameters].[Parameter 1]")
-                    },
-                    buildJsonObject {
-                        put("column", "[INPUT_NAME2]")
-                        put("values", buildJsonArray {
-                            add("select4")
-                            add("select5")
-                            add("select6")
-                        })
-                        put("parameterName", "[Parameters].[Parameter 1]")
-                    },
+                    ParameterInfo(
+                        column = "[INPUT_NAME1]",
+                        values = listOf("select1", "select2", "select3"),
+                        parameterName = "[Parameters].[Parameter 1]"
+                    ),
+                    ParameterInfo(
+                        column = "[INPUT_NAME2]",
+                        values = listOf("select4", "select5", "select6"),
+                        parameterName = "[Parameters].[Parameter 1]"
+                    ),
                 ), parameters
             )
         }

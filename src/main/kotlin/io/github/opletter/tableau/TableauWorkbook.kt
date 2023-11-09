@@ -58,9 +58,8 @@ class TableauWorkbook(
         if (applicationPresModel != null) {
             // Update parameters if present
             val newParameters = getParameterControlVqlResponse(applicationPresModel)
-            val key = "parameterName"
-            val scraperParams = scraper.parameters.map { it[key] }
-            scraper.parameters += newParameters.filter { it[key] !in scraperParams }
+            val scraperParams = scraper.parameters.map { it.parameterName }
+            scraper.parameters += newParameters.filter { it.parameterName !in scraperParams }
 
             // Update filters if present
             val newFilters = getFiltersForAllWorksheet(
@@ -98,8 +97,7 @@ class TableauWorkbook(
 
     suspend fun setParameter(inputName: String, value: String, inputParameter: String? = null): TableauWorkbook {
         val parameterNames = if (inputParameter == null) {
-            scraper.parameters.filter { it["column"]?.jsonPrimitive?.content == inputName }
-                .mapNotNull { it["parameterName"]?.jsonPrimitive?.content }
+            scraper.parameters.filter { it.column == inputName }.map { it.parameterName }
         } else {
             listOf(inputParameter)
         }

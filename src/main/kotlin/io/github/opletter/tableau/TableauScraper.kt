@@ -1,5 +1,6 @@
 package io.github.opletter.tableau
 
+import io.github.opletter.tableau.data.ParameterInfo
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.cookies.*
@@ -20,7 +21,7 @@ class TableauScraper(
     override var dashboard: String = ""
     override var tableauData = JsonObject(emptyMap())
     override var dataSegments = JsonObject(emptyMap()) // persistent data dictionary
-    override var parameters = emptyList<JsonObject>() // persist parameter controls
+    override var parameters = emptyList<ParameterInfo>() // persist parameter controls
     override var filters = mutableMapOf<String, MutableList<JsonObject>>() // persist filters per worksheet
     override var zones = JsonObject(emptyMap()) // persist zones
     override val session: HttpClient = HttpClient(CIO) {

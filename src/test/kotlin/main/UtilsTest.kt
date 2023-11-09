@@ -174,18 +174,18 @@ class UtilsTest {
         val parameterControlInput = getParameterControlInput(info)
 
         assertEquals(2, parameterControlInput.size)
-        assertEquals("[INPUT_NAME1]", parameterControlInput[0]["column"]!!.jsonPrimitive.content)
+        assertEquals("[INPUT_NAME1]", parameterControlInput[0].column)
         assertEquals(
             listOf("select1", "select2", "select3"),
-            parameterControlInput[0]["values"]!!.jsonArray.map { it.jsonPrimitive.content }
+            parameterControlInput[0].values
         )
-        assertEquals("[Parameters].[Parameter 1]", parameterControlInput[0]["parameterName"]!!.jsonPrimitive.content)
-        assertEquals("[INPUT_NAME2]", parameterControlInput[1]["column"]!!.jsonPrimitive.content)
+        assertEquals("[Parameters].[Parameter 1]", parameterControlInput[0].parameterName)
+        assertEquals("[INPUT_NAME2]", parameterControlInput[1].column)
         assertEquals(
             listOf("select4", "select5", "select6"),
-            parameterControlInput[1]["values"]!!.jsonArray.map { it.jsonPrimitive.content }
+            parameterControlInput[1].values
         )
-        assertEquals("[Parameters].[Parameter 1]", parameterControlInput[1]["parameterName"]!!.jsonPrimitive.content)
+        assertEquals("[Parameters].[Parameter 1]", parameterControlInput[1].parameterName)
     }
 
     @Test
@@ -195,18 +195,18 @@ class UtilsTest {
         val parameterControl = getParameterControlVqlResponse(presModel)
 
         assertEquals(2, parameterControl.size)
-        assertEquals("[INPUT_NAME1]", parameterControl[0]["column"]!!.jsonPrimitive.content)
+        assertEquals("[INPUT_NAME1]", parameterControl[0].column)
         assertEquals(
             listOf("select1", "select2", "select3"),
-            parameterControl[0]["values"]!!.jsonArray.map { it.jsonPrimitive.content }
+            parameterControl[0].values
         )
-        assertEquals("[Parameters].[Parameter 1]", parameterControl[0]["parameterName"]!!.jsonPrimitive.content)
-        assertEquals("[INPUT_NAME2]", parameterControl[1]["column"]!!.jsonPrimitive.content)
+        assertEquals("[Parameters].[Parameter 1]", parameterControl[0].parameterName)
+        assertEquals("[INPUT_NAME2]", parameterControl[1].column)
         assertEquals(
             listOf("select4", "select5", "select6"),
-            parameterControl[1]["values"]!!.jsonArray.map { it.jsonPrimitive.content }
+            parameterControl[1].values
         )
-        assertEquals("[Parameters].[Parameter 1]", parameterControl[1]["parameterName"]!!.jsonPrimitive.content)
+        assertEquals("[Parameters].[Parameter 1]", parameterControl[1].parameterName)
     }
 
     @Test

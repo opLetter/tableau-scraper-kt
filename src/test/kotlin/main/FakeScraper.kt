@@ -1,6 +1,7 @@
 package main
 
 import io.github.opletter.tableau.Scraper
+import io.github.opletter.tableau.data.ParameterInfo
 import io.ktor.client.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -22,7 +23,7 @@ open class FakeScraper : Scraper {
     override var dashboard: String = ""
     override var tableauData = JsonObject(emptyMap())
     override var dataSegments = JsonObject(emptyMap()) // persistent data dictionary
-    override var parameters = listOf<JsonObject>() // persist parameter controls
+    override var parameters = emptyList<ParameterInfo>() // persist parameter controls
     override var filters = mutableMapOf<String, MutableList<JsonObject>>() // persist filters per worksheet
     override var zones = JsonObject(emptyMap()) // persist zones
     override val session: HttpClient = HttpClient()

@@ -1,5 +1,6 @@
 package io.github.opletter.tableau
 
+import io.github.opletter.tableau.data.ParameterInfo
 import io.ktor.client.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -17,7 +18,7 @@ interface Scraper {
     var dashboard: String
     var tableauData: JsonObject
     var dataSegments: JsonObject
-    var parameters: List<JsonObject>
+    var parameters: List<ParameterInfo>
     var filters: MutableMap<String, MutableList<JsonObject>>
     var zones: JsonObject
     val session: HttpClient

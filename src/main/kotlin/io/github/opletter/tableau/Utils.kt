@@ -1,9 +1,6 @@
 package io.github.opletter.tableau
 
-import io.github.opletter.tableau.data.IndicesInfo
-import io.github.opletter.tableau.data.LimitedIndicesInfo
-import io.github.opletter.tableau.data.StoryPointEntry
-import io.github.opletter.tableau.data.StoryPointHolder
+import io.github.opletter.tableau.data.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.*
 import kotlin.collections.component1
@@ -490,26 +487,26 @@ internal fun hasVizData(zone: JsonObject): Boolean {
 private inline fun getParameterControl(
     getData: () -> JsonObject,
     altData: (JsonObject) -> Collection<JsonElement>,
-): List<JsonObject> {
+): List<ParameterInfo> {
     val presModel = getData()
     return listWorksheetStoryPoint(presModel, hasWorksheet = false)
         .ifEmpty { altData(presModel) }
         .mapNotNull {
             it.jsonObject["presModelHolder"]?.jsonObject?.get("parameterControl")?.jsonObject?.let {
-                buildJsonObject {
-                    put("column", it["fieldCaption"]!!)
-                    put("values", it["formattedValues"]!!)
-                    put("parameterName", it["parameterName"]!!)
-                }
+                ParameterInfo(
+                    column = it["fieldCaption"]!!.jsonPrimitive.content,
+                    values = it["formattedValues"]!!.jsonArray.map { it.jsonPrimitive.content },
+                    parameterName = it["parameterName"]!!.jsonPrimitive.content,
+                )
             }
         }
 }
 
-internal fun getParameterControlInput(info: JsonObject): List<JsonObject> =
+internal fun getParameterControlInput(info: JsonObject): List<ParameterInfo> =
     getParameterControl({ getPresModelVizInfo(info)!! }, { getZones(it)!!.values })
 
 
-internal fun getParameterControlVqlResponse(presModel: JsonObject): List<JsonObject> =
+internal fun getParameterControlVqlResponse(presModel: JsonObject): List<ParameterInfo> =
     getParameterControl({ getZones(presModel)!! }, { it.values })
 
 internal fun getStoryPointsFromInfo(info: JsonObject): StoryPointHolder {
