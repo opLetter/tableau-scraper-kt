@@ -113,7 +113,6 @@ class TableauWorkbook(
             )
         }
 
-        println(parameterNames[0])
         val response = scraper.setParameterValue(parameterNames[0], value)
         updateFullData(response)
         return Dashboard.getWorksheetsCmdResponse(scraper, response)
