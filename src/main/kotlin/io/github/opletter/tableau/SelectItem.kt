@@ -2,7 +2,7 @@ package io.github.opletter.tableau
 
 import kotlinx.serialization.json.JsonObject
 
-object SelectItem {
+internal object SelectItem {
     suspend fun get(scraper: Scraper, data: JsonObject, info: JsonObject): TableauWorkbook {
         val selectedWorksheet = selectWorksheet(data, single = true).firstOrNull()
             ?: return TableauWorkbook(

@@ -2,7 +2,7 @@ package io.github.opletter.tableau
 
 import kotlinx.serialization.json.JsonObject
 
-object ParameterControl {
+internal object ParameterControl {
     suspend fun get(scraper: Scraper, info: JsonObject): TableauWorkbook {
         val parameterControl = getParameterControlInput(info)
         for ((idx, item) in parameterControl.withIndex()) {
