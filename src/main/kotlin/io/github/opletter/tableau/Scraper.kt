@@ -2,14 +2,12 @@ package io.github.opletter.tableau
 
 import io.github.opletter.tableau.data.ParameterInfo
 import io.ktor.client.*
+import io.ktor.http.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jsoup.Jsoup
-import java.net.URI
-import java.net.URLDecoder
-import java.util.regex.Pattern
 
 interface Scraper {
     var host: String
@@ -51,7 +49,7 @@ interface Scraper {
 
         val tableauDataResponse = tableauPlaceHolder?.let {
             val paramMap = tableauPlaceHolder.select("param").associate { param ->
-                param.attr("name") to URLDecoder.decode(param.attr("value"), "UTF-8")
+                param.attr("name") to param.attr("value").decodeURLPart()
             }
 
             if ("host_url" !in paramMap || "site_root" !in paramMap || "name" !in paramMap) {
@@ -82,17 +80,16 @@ interface Scraper {
             }
         }
 
-        val uri = URI(url)
-        host = "${uri.scheme}://${uri.host}"
+        host = Url(url).protocolWithAuthority
 
         val rData = getTableauData()
 
         try {
-            val dataRegPattern = Pattern.compile("\\d+;(\\{.*})\\d+;(\\{.*})", Pattern.MULTILINE)
-            val dataRegMatcher = dataRegPattern.matcher(rData)
-            if (dataRegMatcher.find()) {
-                info = Json.parseToJsonElement(dataRegMatcher.group(1)).jsonObject
-                data = Json.parseToJsonElement(dataRegMatcher.group(2)).jsonObject
+            val dataRegPattern = "\\d+;(\\{.*})\\d+;(\\{.*})".toRegex(RegexOption.MULTILINE)
+            val matchResult = dataRegPattern.find(rData)
+            if (matchResult != null) {
+                info = Json.parseToJsonElement(matchResult.groupValues[1]).jsonObject
+                data = Json.parseToJsonElement(matchResult.groupValues[2]).jsonObject
 
                 val presModelMap = data["secondaryInfo"]?.jsonObject?.get("presModelMap")?.jsonObject
                 presModelMap?.let { modelMap ->
