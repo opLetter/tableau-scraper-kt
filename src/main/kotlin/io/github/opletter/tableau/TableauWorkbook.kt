@@ -87,7 +87,7 @@ class TableauWorkbook(
             getZones(it)?.filterNotNullValues()?.mapValues { (key, value) ->
                 val zoneHasVizData = hasVizData(value.jsonObject)
                 val newValue = if (!zoneHasVizData && key in scraper.zones) scraper.zones[key] else value
-                newValue!!.jsonObject.deepCopy()
+                newValue!!.jsonObject
             }
         }.orEmpty()
         scraper.zones = JsonObject(newZones)

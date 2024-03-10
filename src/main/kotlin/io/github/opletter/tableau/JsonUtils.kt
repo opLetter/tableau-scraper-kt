@@ -1,21 +1,10 @@
 package io.github.opletter.tableau
 
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.api.toDataFrame
-
-internal fun JsonObject.deepCopy(): JsonObject {
-    return JsonObject(mapValues { (_, value) -> value.deepCopy() })
-}
-
-internal fun JsonElement.deepCopy(): JsonElement {
-    return when (this) {
-        is JsonObject -> deepCopy()
-        is JsonArray -> JsonArray(map { it.deepCopy() })
-        is JsonPrimitive -> this
-        else -> JsonNull
-    }
-}
 
 internal fun JsonObject.filterNotNullValues(): JsonObject {
     return JsonObject(filterValues { it != JsonNull })

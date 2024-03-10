@@ -367,12 +367,8 @@ internal fun listWorksheetStoryPoint(
 }
 
 private fun getDataFullHelper(dataSegments: JsonObject, originSegments: JsonObject): JsonObject {
-    // probably not necessary
-    val dataSegmentscp = JsonObject(dataSegments).deepCopy()
-    val originSegmentscp = originSegments.deepCopy()
-
-    val a = originSegmentscp.filterNotNullValues().flatMap { it.value.jsonObject["dataColumns"]!!.jsonArray }
-    val b = dataSegmentscp.filterNot { it.key in originSegmentscp.keys || it.value == JsonNull }
+    val a = originSegments.filterNotNullValues().flatMap { it.value.jsonObject["dataColumns"]!!.jsonArray }
+    val b = dataSegments.filterNot { it.key in originSegments || it.value == JsonNull }
         .flatMap { it.value.jsonObject["dataColumns"]!!.jsonArray }
     return (a + b)
         .groupBy({ it.jsonObject["dataType"]!!.jsonPrimitive.content }, { it.jsonObject["dataValues"]!!.jsonArray })
