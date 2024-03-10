@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -30,6 +32,7 @@ tasks.test {
 
 kotlin {
     jvmToolchain(17)
+    compilerOptions.languageVersion = KotlinVersion.KOTLIN_1_9
 }
 
 val sourcesJar by tasks.registering(Jar::class) {
