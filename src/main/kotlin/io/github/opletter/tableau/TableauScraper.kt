@@ -8,6 +8,7 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -53,6 +54,24 @@ class TableauScraper(
             if (params.isEmpty()) {
                 parameter(":embed", "y")
                 parameter(":showVizHome", "no")
+            }
+        }.bodyAsText()
+    }
+
+    // Attempt to workaround for https://github.com/bertrandmartel/tableau-scraping/issues/77
+    // Not an ideal solution,
+    // - the workbook/worksheet parsing is fragile
+    // - it's unclear if the "/vizql/w/..." path is always correct (the "vizql_root" key returned by this API may contain the correct value)
+    suspend fun getTableauViz2(url: String, params: Map<String, String>): String {
+        val requestUrl = URLBuilder(url).apply {
+            val (workbook, worksheet) = pathSegments.takeLast(2)
+            pathSegments = listOf("vizql", "w", workbook, "v", worksheet, "startSession", "viewing")
+        }.build()
+        return session.post(requestUrl) {
+            params.forEach { (key, value) -> parameter(key, value) }
+            if (params.isEmpty()) {
+                parameter(":embed", "y")
+                parameter(":showVizHome", "n")
             }
         }.bodyAsText()
     }

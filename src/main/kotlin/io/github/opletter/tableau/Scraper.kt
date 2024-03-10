@@ -71,8 +71,15 @@ interface Scraper {
             newSoup.select("textarea#tsConfigContainer").first()?.text()
         } ?: soup.select("textarea#tsConfigContainer").first()?.text()
 
-        tableauDataResponse?.let {
+        tableauDataResponse?.takeIf { it.isNotEmpty() }?.let {
             tableauData = Json.parseToJsonElement(it).jsonObject
+        } ?: run {
+            // It seems there were changes in the Tableau API, at least for public.tableau.com dashboards
+            // See also: https://github.com/bertrandmartel/tableau-scraping/issues/77
+            val tableauDataResponseNewFormat = (this as? TableauScraper)?.getTableauViz2(url, params)
+            if (tableauDataResponseNewFormat != null) {
+                tableauData = Json.parseToJsonElement(tableauDataResponseNewFormat).jsonObject
+            }
         }
 
         val uri = URI(url)
