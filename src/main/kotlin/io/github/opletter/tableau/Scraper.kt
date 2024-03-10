@@ -49,7 +49,7 @@ interface Scraper {
 
         val tableauPlaceHolder = soup.select("div.tableauPlaceholder").first()
 
-        tableauPlaceHolder?.let {
+        val tableauDataResponse = tableauPlaceHolder?.let {
             val paramMap = tableauPlaceHolder.select("param").associate { param ->
                 param.attr("name") to URLDecoder.decode(param.attr("value"), "UTF-8")
             }
@@ -69,12 +69,10 @@ interface Scraper {
             val newSoup = Jsoup.parse(newR)
 
             newSoup.select("textarea#tsConfigContainer").first()?.text()
-                ?.let { tableauData = Json.parseToJsonElement(it).jsonObject }
-        } ?: run {
-            val tsConfigContainer = soup.select("textarea#tsConfigContainer").first()?.text()
-            tsConfigContainer?.let { container ->
-                tableauData = Json.parseToJsonElement(container).jsonObject
-            }
+        } ?: soup.select("textarea#tsConfigContainer").first()?.text()
+
+        tableauDataResponse?.let {
+            tableauData = Json.parseToJsonElement(it).jsonObject
         }
 
         val uri = URI(url)
