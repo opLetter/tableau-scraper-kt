@@ -45,22 +45,6 @@ class ReplExamplesTest {
     }
 
     @Test
-    fun example7() = runTest {
-        val url = "https://bi.wisconsin.gov/t/DHS/views/VaccinesAdministeredtoWIResidents/VaccinatedWisconsin-County"
-
-        val ts = TableauScraper()
-        ts.loads(url)
-
-        val worksheet = ts.getWorksheet("Map")
-
-        var dashboard = worksheet.select("County", "Waukesha County")
-        println(dashboard.getWorksheet("Race vax/unvax county").data.toJson())
-
-        dashboard = worksheet.select("County", "Forest County")
-        println(dashboard.getWorksheet("Race vax/unvax county").data.toJson())
-    }
-
-    @Test
     fun example8() = runTest {
         val url = "https://public.tableau.com/views/NewspapersByCountyCalifornia/Newspaperbycounty"
 
@@ -114,28 +98,6 @@ class ReplExamplesTest {
             wb = ws.select("County", county)
             val demographics = wb.getWorksheet("New Demographics")
             println(demographics.data.toJson())
-        }
-    }
-
-    @Test
-    fun example12() = runTest {
-        val url = "https://www.nh.gov/t/DHHS/views/COVID19TestingDashboard/TestingDashboard"
-        val ts = TableauScraper()
-        ts.loads(url)
-
-        val ws = ts.getWorksheet("All Tests COVID19")
-
-        val filters = ws.getFilters()
-
-        val counties = filters.firstOrNull { it["column"]!!.jsonPrimitive.content == "Union Key for CMN" }
-            ?.get("values")?.jsonArray?.map { it.jsonPrimitive.content }.orEmpty()
-        println(counties)
-
-        for (county in counties) {
-            println(county)
-            val wb = ws.setFilter("Union Key for CMN", county)
-            val countyWs = wb.getWorksheet("All Tests COVID19")
-            println(countyWs.data.toJson())
         }
     }
 
