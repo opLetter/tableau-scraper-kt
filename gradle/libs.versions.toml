@@ -1,7 +1,7 @@
 [versions]
-kotlin = "2.0.0-Beta5"
-ktor = "2.3.8"
-coroutines = "1.8.0"
+kotlin = "2.0.0-RC1"
+ktor = "2.3.10"
+coroutines = "1.8.1-Beta"
 serialization = "1.6.3"
 jsoup = "1.17.2"
 dataframe = "0.13.1"
